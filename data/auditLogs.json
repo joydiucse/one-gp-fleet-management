@@ -1,0 +1,202 @@
+[
+  {
+    "id": "AL-025",
+    "timestamp": "2026-07-27T09:15:10.239Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-024",
+    "timestamp": "2026-07-27T09:12:27.290Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-023",
+    "timestamp": "2026-07-27T09:11:42.401Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-022",
+    "timestamp": "2026-07-27T09:10:20.300Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-021",
+    "timestamp": "2026-07-27T09:08:53.489Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-020",
+    "timestamp": "2026-07-27T09:08:40.605Z",
+    "user": "Nafisa Rahman",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Nafisa Rahman (Finance) signed out."
+  },
+  {
+    "id": "AL-019",
+    "timestamp": "2026-07-27T09:08:37.421Z",
+    "user": "Nafisa Rahman",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Nafisa Rahman (Finance) signed in."
+  },
+  {
+    "id": "AL-018",
+    "timestamp": "2026-07-27T09:08:30.697Z",
+    "user": "Farhana Chowdhury",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Farhana Chowdhury (Billing Administrator) signed out."
+  },
+  {
+    "id": "AL-017",
+    "timestamp": "2026-07-27T09:08:16.561Z",
+    "user": "Farhana Chowdhury",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Farhana Chowdhury (Billing Administrator) signed in."
+  },
+  {
+    "id": "AL-016",
+    "timestamp": "2026-07-27T09:08:13.254Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-015",
+    "timestamp": "2026-07-27T09:04:33.819Z",
+    "user": "Nafisa Rahman",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Nafisa Rahman (Finance) signed in."
+  },
+  {
+    "id": "AL-014",
+    "timestamp": "2026-07-27T09:02:26.471Z",
+    "user": "Md. Rezaul Karim",
+    "action": "Delete Vehicle Master",
+    "module": "Vehicle Master",
+    "details": "Deleted DHAKA METRO GHA-13-6671"
+  },
+  {
+    "id": "AL-013",
+    "timestamp": "2026-07-27T09:02:12.741Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-001",
+    "timestamp": "2026-07-27T08:20:00",
+    "user": "Md. Rezaul Karim",
+    "action": "Master Data Update",
+    "module": "Vehicle Master",
+    "details": "Updated status of DHAKA METRO CHA-14-5522 to Maintenance."
+  },
+  {
+    "id": "AL-002",
+    "timestamp": "2026-07-26T17:45:00",
+    "user": "Farhana Chowdhury",
+    "action": "Bill Approval",
+    "module": "Billing",
+    "details": "Approved invoice FMS/INV/2026/06/0003 for DHAKA METRO GA-11-2202."
+  },
+  {
+    "id": "AL-003",
+    "timestamp": "2026-07-26T12:10:00",
+    "user": "Nafisa Rahman",
+    "action": "Bill Rejection",
+    "module": "Billing",
+    "details": "Rejected invoice FMS/INV/2026/06/0009 - distance mismatch with GPS log."
+  },
+  {
+    "id": "AL-004",
+    "timestamp": "2026-07-25T15:30:00",
+    "user": "Shahriar Kabir",
+    "action": "Manual Adjustment",
+    "module": "Billing",
+    "details": "Added BDT 500 other charge (ferry crossing) to invoice FMS/INV/2026/06/0004."
+  },
+  {
+    "id": "AL-005",
+    "timestamp": "2026-07-24T10:05:00",
+    "user": "Md. Rezaul Karim",
+    "action": "Master Data Change",
+    "module": "Rate Card",
+    "details": "Updated per-KM rate for SUV / Diesel from 15.5 to 16.0."
+  },
+  {
+    "id": "AL-006",
+    "timestamp": "2026-07-23T09:15:00",
+    "user": "System",
+    "action": "Bill Generation",
+    "module": "Billing",
+    "details": "Auto-generated 9 draft invoices for billing month 2026-06."
+  },
+  {
+    "id": "AL-007",
+    "timestamp": "2026-07-22T14:50:00",
+    "user": "Md. Rezaul Karim",
+    "action": "User Activity",
+    "module": "User Management",
+    "details": "Added new user Rubaiya Tasnim with role Read Only."
+  },
+  {
+    "id": "AL-008",
+    "timestamp": "2026-07-21T11:20:00",
+    "user": "System",
+    "action": "API Transaction",
+    "module": "OneGP Integration",
+    "details": "Received trip completion payload for ticket OGP-TCK-100253."
+  },
+  {
+    "id": "AL-009",
+    "timestamp": "2026-07-18T16:00:00",
+    "user": "Farhana Chowdhury",
+    "action": "Bill Approval",
+    "module": "Billing",
+    "details": "Approved invoice FMS/INV/2026/05/0015 for DHAKA METRO GA-11-2201."
+  },
+  {
+    "id": "AL-010",
+    "timestamp": "2026-07-10T08:35:00",
+    "user": "System",
+    "action": "API Transaction",
+    "module": "OneGP Integration",
+    "details": "Flagged duplicate Ticket ID OGP-TCK-100249 during trip ingestion."
+  },
+  {
+    "id": "AL-011",
+    "timestamp": "2026-07-05T09:40:00",
+    "user": "Md. Rezaul Karim",
+    "action": "Master Data Update",
+    "module": "Driver Master",
+    "details": "Set driver Md. Nazmul Huda status to Suspended pending license renewal."
+  },
+  {
+    "id": "AL-012",
+    "timestamp": "2026-06-30T13:10:00",
+    "user": "Farhana Chowdhury",
+    "action": "User Activity",
+    "module": "User Management",
+    "details": "Deactivated user Mahin Sarker (role transfer)."
+  }
+]
