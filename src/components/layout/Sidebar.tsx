@@ -29,13 +29,13 @@ import { navItems } from "./navConfig";
 import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "@/theme/theme";
 
 const iconMap: Record<string, React.ReactElement> = {
-  dashboard: <DashboardRoundedIcon />,
-  master: <DirectionsCarFilledRoundedIcon />,
-  trip: <AssignmentRoundedIcon />,
-  billing: <ReceiptLongRoundedIcon />,
-  reports: <BarChartRoundedIcon />,
-  audit: <FactCheckRoundedIcon />,
-  admin: <AdminPanelSettingsRoundedIcon />,
+  dashboard: <DashboardRoundedIcon fontSize="small" />,
+  master: <DirectionsCarFilledRoundedIcon fontSize="small" />,
+  trip: <AssignmentRoundedIcon fontSize="small" />,
+  billing: <ReceiptLongRoundedIcon fontSize="small" />,
+  reports: <BarChartRoundedIcon fontSize="small" />,
+  audit: <FactCheckRoundedIcon fontSize="small" />,
+  admin: <AdminPanelSettingsRoundedIcon fontSize="small" />,
 };
 
 export default function Sidebar({
@@ -97,7 +97,7 @@ export default function Sidebar({
         </IconButton>
       </Box>
 
-      <List sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 1 }}>
+      <List sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 0.5 }}>
         {navItems.map((item) => {
           if (item.children) {
             const open = openGroups[item.label] && !collapsed;
@@ -109,15 +109,17 @@ export default function Sidebar({
                     onClick={() => (collapsed ? undefined : toggleGroup(item.label))}
                     sx={{
                       mx: 1,
+                      py: 0.5,
+                      minHeight: 36,
                       borderRadius: 1.5,
                       color: groupActive ? "#fff" : "#c9d3e6",
                       "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
+                    <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
                       {iconMap[item.iconKey]}
                     </ListItemIcon>
-                    {!collapsed && <ListItemText primary={item.label} />}
+                    {!collapsed && <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 13.5 } } }} />}
                     {!collapsed && (open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />)}
                   </ListItemButton>
                 </Tooltip>
@@ -132,7 +134,9 @@ export default function Sidebar({
                         selected={isActive(child.href)}
                         sx={{
                           mx: 1,
-                          pl: 5,
+                          py: 0.375,
+                          pl: 4.5,
+                          minHeight: 32,
                           borderRadius: 1.5,
                           color: isActive(child.href) ? "#fff" : "#a7b3ca",
                           "&.Mui-selected": {
@@ -145,7 +149,7 @@ export default function Sidebar({
                       >
                         <ListItemText
                           primary={child.label}
-                          slotProps={{ primary: { sx: { fontSize: 14 } } }}
+                          slotProps={{ primary: { sx: { fontSize: 13 } } }}
                         />
                       </ListItemButton>
                     ))}
@@ -166,6 +170,8 @@ export default function Sidebar({
                 sx={{
                   mx: 1,
                   mb: 0.25,
+                  py: 0.5,
+                  minHeight: 36,
                   borderRadius: 1.5,
                   color: active ? "#fff" : "#c9d3e6",
                   "&.Mui-selected": {
@@ -176,10 +182,10 @@ export default function Sidebar({
                   "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
+                <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
                   {iconMap[item.iconKey]}
                 </ListItemIcon>
-                {!collapsed && <ListItemText primary={item.label} />}
+                {!collapsed && <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 13.5 } } }} />}
               </ListItemButton>
             </Tooltip>
           );

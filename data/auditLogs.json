@@ -1,19 +1,99 @@
 [
   {
+    "id": "AL-048",
+    "timestamp": "2026-07-27T10:52:17.146Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-047",
+    "timestamp": "2026-07-27T10:52:08.804Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-046",
+    "timestamp": "2026-07-27T10:50:33.093Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-045",
+    "timestamp": "2026-07-27T10:50:17.277Z",
+    "user": "Tasnia Ferdous",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Tasnia Ferdous (Read Only) signed out."
+  },
+  {
+    "id": "AL-044",
+    "timestamp": "2026-07-27T10:50:11.859Z",
+    "user": "Tasnia Ferdous",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Tasnia Ferdous (Read Only) signed in."
+  },
+  {
+    "id": "AL-043",
+    "timestamp": "2026-07-27T10:50:09.872Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-042",
+    "timestamp": "2026-07-27T10:50:07.432Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-041",
+    "timestamp": "2026-07-27T10:49:58.207Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-040",
+    "timestamp": "2026-07-27T10:48:03.508Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-039",
+    "timestamp": "2026-07-27T10:46:18.343Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
     "id": "AL-038",
-    "timestamp": "2026-07-27T10:32:25.435Z",
-    "user": "Smoke Tester",
-    "action": "Bill Generation",
-    "module": "Billing",
-    "details": "Updated draft invoice INV-2026-07-013 for DHAKA METRO GA-11-2201 (trip TEST-TCK-0002)."
+    "timestamp": "2026-07-27T10:44:18.165Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
   },
   {
     "id": "AL-037",
-    "timestamp": "2026-07-27T10:32:25.414Z",
-    "user": "Smoke Tester",
-    "action": "Bill Generation",
-    "module": "Billing",
-    "details": "Generated draft invoice INV-2026-07-013 for DHAKA METRO GA-11-2201 (trip TEST-TCK-0001)."
+    "timestamp": "2026-07-27T10:44:08.801Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
   },
   {
     "id": "AL-036",

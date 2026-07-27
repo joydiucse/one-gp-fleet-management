@@ -14,9 +14,11 @@ import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import GpsFixedRoundedIcon from "@mui/icons-material/GpsFixedRounded";
+import KeyRoundedIcon from "@mui/icons-material/KeyRounded";
 import { useAuth } from "@/store/AuthContext";
 
 const SAMPLE_CREDENTIALS = [
@@ -155,57 +157,43 @@ export default function LoginPage() {
             </Stack>
           </Box>
 
-          <Divider sx={{ my: 2.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Sample Credentials (demo)
-            </Typography>
-          </Divider>
+          <Divider sx={{ my: 2 }} />
 
-          <Stack spacing={0.75}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              mb: 1,
+              color: "text.secondary",
+            }}
+          >
+            <KeyRoundedIcon sx={{ fontSize: 14 }} />
+            <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: 0.3 }}>
+              DEMO ACCOUNTS
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
             {SAMPLE_CREDENTIALS.map((cred) => (
-              <Box
-                key={cred.email}
-                onClick={() => applySample(cred.email, cred.password)}
-                sx={{
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  px: 1.25,
-                  py: 0.75,
-                  borderRadius: 1.5,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  transition: "background-color 0.15s, border-color 0.15s",
-                  "&:hover": {
-                    bgcolor: "action.hover",
-                    borderColor: "primary.main",
-                  },
-                }}
-              >
+              <Tooltip key={cred.email} title={`${cred.email} · ${cred.password}`} arrow placement="top">
                 <Chip
                   size="small"
                   label={cred.role}
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600, flexShrink: 0 }}
-                />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
+                  onClick={() => applySample(cred.email, cred.password)}
                   sx={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    flex: 1,
+                    fontWeight: 600,
+                    fontSize: 12,
+                    bgcolor: "action.hover",
+                    "&:hover": {
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                    },
                   }}
-                  title={`${cred.email} / ${cred.password}`}
-                >
-                  {cred.email}
-                </Typography>
-              </Box>
+                />
+              </Tooltip>
             ))}
-          </Stack>
+          </Box>
         </CardContent>
       </Card>
     </Box>
