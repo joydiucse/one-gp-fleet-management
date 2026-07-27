@@ -50,11 +50,18 @@ export async function POST(req: NextRequest) {
     details: `${user.name} (${user.role}) signed in.`,
   });
 
+  // `Secure` cookies are dropped by the browser on plain HTTP. NODE_ENV alone
+  // can't tell us that — a production build can still be served over http://,
+  // as it is here — so mark the cookie secure only when the actual request
+  // (accounting for a reverse proxy) came in over https.
+  const isHttps =
+    req.headers.get("x-forwarded-proto") === "https" || req.nextUrl.protocol === "https:";
+
   const res = NextResponse.json({ user: toPublicUser(users[idx]) });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     path: "/",
     maxAge: SESSION_TTL_MS / 1000,
   });

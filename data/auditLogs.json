@@ -1,5 +1,53 @@
 [
   {
+    "id": "AL-054",
+    "timestamp": "2026-07-27T10:58:50.400Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-053",
+    "timestamp": "2026-07-27T10:58:44.696Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-052",
+    "timestamp": "2026-07-27T10:58:42.392Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-051",
+    "timestamp": "2026-07-27T10:58:39.638Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
+    "id": "AL-050",
+    "timestamp": "2026-07-27T10:57:59.609Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
+    "id": "AL-049",
+    "timestamp": "2026-07-27T10:57:57.946Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Logout",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed out."
+  },
+  {
     "id": "AL-048",
     "timestamp": "2026-07-27T10:52:17.146Z",
     "user": "Md. Rezaul Karim",
