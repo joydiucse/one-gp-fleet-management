@@ -84,7 +84,7 @@ export default function Sidebar({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
             <GpsFixedRoundedIcon sx={{ color: "#0f9bd7" }} />
             <Typography variant="subtitle1" sx={{ color: "#fff", fontWeight: 700, whiteSpace: "nowrap" }}>
-              Project Simplex
+              Fleet Management
             </Typography>
           </Box>
         )}

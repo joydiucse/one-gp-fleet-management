@@ -58,6 +58,11 @@ export interface FlagInfo {
   gpsDataMissing: boolean;
 }
 
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface Requisition {
   id: string;
   ticketId: string;
@@ -67,6 +72,9 @@ export interface Requisition {
   requestDateTime: string;
   pickupLocation: string;
   destination: string;
+  pickupCoords?: GeoPoint;
+  destinationCoords?: GeoPoint;
+  routePolyline?: GeoPoint[];
   vehicleNumber: string;
   vehicleCategory: VehicleCategory;
   driverName: string;

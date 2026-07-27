@@ -7,7 +7,7 @@ import { InvoiceStoreProvider } from "@/store/InvoiceStore";
 import { AuthProvider } from "@/store/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Project Simplex | Fleet Billing System",
+  title: "Fleet Management | Fleet Billing System",
   description: "Automated Fleet Billing System based on trip distance, integrated with OneGP.",
 };
 

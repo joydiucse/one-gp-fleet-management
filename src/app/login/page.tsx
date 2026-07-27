@@ -94,7 +94,7 @@ export default function LoginPage() {
             </Box>
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                Project Simplex
+                Fleet Management
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Automated Fleet Billing System
