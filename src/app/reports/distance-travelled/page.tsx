@@ -10,7 +10,7 @@ export default function DistanceTravelledReportPage() {
   const { requisitions, loading } = useReportData();
 
   const rows = React.useMemo(() => {
-    const map = groupSum(requisitions, (r) => r.vehicleNumber, (r) => r.totalDistanceKm ?? 0);
+    const map = groupSum(requisitions, (r) => r.vehicleNumber ?? "Unassigned", (r) => r.totalDistanceKm ?? 0);
     return Array.from(map.entries()).map(([vehicleNumber, distanceKm], idx) => ({
       id: idx,
       vehicleNumber,

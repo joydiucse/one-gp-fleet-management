@@ -8,8 +8,8 @@ import CardContent from "@mui/material/CardContent";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
-import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
+import Stack from "@mui/material/Stack";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Button from "@mui/material/Button";
@@ -34,11 +34,17 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import StopRoundedIcon from "@mui/icons-material/StopRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import BlockRoundedIcon from "@mui/icons-material/BlockRounded";
+import DirectionsCarRoundedIcon from "@mui/icons-material/DirectionsCarRounded";
+import MoreTimeRoundedIcon from "@mui/icons-material/MoreTimeRounded";
+import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import PageHeader from "@/components/common/PageHeader";
 import StatusChip from "@/components/common/StatusChip";
-import { Requisition, Vehicle, Driver } from "@/types";
+import { Requisition, Vehicle, Driver, Invoice } from "@/types";
 import { useCollection } from "@/lib/useCollection";
+import { useInvoiceStore } from "@/store/InvoiceStore";
+import { useAuth } from "@/store/AuthContext";
+import { downloadInvoicePdf } from "@/lib/invoicePdf";
 import { RoutePickerResult } from "@/components/requisitions/RoutePickerMap";
 
 const RoutePickerMap = dynamic(() => import("@/components/requisitions/RoutePickerMap"), {
@@ -77,10 +83,18 @@ function flagLabels(flags: Requisition["flags"]): string[] {
   return (Object.keys(flags) as (keyof Requisition["flags"])[]).filter((k) => flags[k]).map((k) => map[k]);
 }
 
+function findInvoiceForRequisition(requisition: Requisition, invoices: Invoice[]): Invoice | undefined {
+  if (!requisition.vehicleNumber) return undefined;
+  const billingMonth = requisition.requestDateTime.slice(0, 7);
+  return invoices.find((inv) => inv.vehicleNumber === requisition.vehicleNumber && inv.billingMonth === billingMonth);
+}
+
 export default function RequisitionsPage() {
+  const { user } = useAuth();
   const { data: requisitions, loading, create, update } = useCollection<Requisition>("/api/requisitions");
   const { data: vehicles } = useCollection<Vehicle>("/api/vehicles");
   const { data: drivers } = useCollection<Driver>("/api/drivers");
+  const { invoices } = useInvoiceStore();
   const [filter, setFilter] = React.useState<string>("all");
   const [open, setOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -92,10 +106,88 @@ export default function RequisitionsPage() {
   const [toast, setToast] = React.useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
   const [menuRow, setMenuRow] = React.useState<Requisition | null>(null);
+  const [assignRow, setAssignRow] = React.useState<Requisition | null>(null);
+  const [assignForm, setAssignForm] = React.useState({ vehicleId: "", driverId: "" });
+  const [extendRow, setExtendRow] = React.useState<Requisition | null>(null);
+  const [extendEndTime, setExtendEndTime] = React.useState("");
+  const [extendNote, setExtendNote] = React.useState("");
 
   const closeMenu = () => {
     setMenuAnchor(null);
     setMenuRow(null);
+  };
+
+  const openAssign = (row: Requisition) => {
+    setAssignRow(row);
+    setAssignForm({
+      vehicleId: vehicles.find((v) => v.vehicleNumber === row.vehicleNumber)?.id ?? "",
+      driverId: drivers.find((d) => d.name === row.driverName)?.id ?? "",
+    });
+  };
+
+  const handleAssignSave = async () => {
+    if (!assignRow) return;
+    const selectedVehicle = vehicles.find((v) => v.id === assignForm.vehicleId);
+    const selectedDriver = drivers.find((d) => d.id === assignForm.driverId);
+    if (!selectedVehicle) {
+      setToast("Select a vehicle to assign.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await update(assignRow.id, {
+        vehicleNumber: selectedVehicle.vehicleNumber,
+        vehicleCategory: selectedVehicle.category,
+        driverName: selectedDriver?.name,
+      });
+      setToast("Vehicle assigned.");
+      setAssignRow(null);
+    } catch {
+      setToast("Failed to assign vehicle.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openExtend = (row: Requisition) => {
+    setExtendRow(row);
+    setExtendNote("");
+    const base = row.tripEndTime ?? new Date().toISOString();
+    setExtendEndTime(base.slice(0, 16));
+  };
+
+  const handleExtendSave = async () => {
+    if (!extendRow || !extendEndTime || !extendNote.trim()) {
+      setToast("A reason is required to extend the trip time.");
+      return;
+    }
+    const previousEndTime = extendRow.tripEndTime;
+    const newEndTime = new Date(extendEndTime).toISOString();
+    const minutes = extendRow.tripStartTime
+      ? Math.round((new Date(newEndTime).getTime() - new Date(extendRow.tripStartTime).getTime()) / 60000)
+      : extendRow.totalTravelTimeMinutes;
+    const extension = {
+      extendedAt: new Date().toISOString(),
+      previousEndTime,
+      newEndTime,
+      note: extendNote.trim(),
+      extendedBy: user?.name ?? "System",
+    };
+    setActionLoadingId(extendRow.id);
+    try {
+      const updated = await update(extendRow.id, {
+        tripEndTime: newEndTime,
+        totalTravelTimeMinutes: minutes,
+        timeExtensions: [...(extendRow.timeExtensions ?? []), extension],
+      });
+      setViewRow((v) => (v?.id === extendRow.id ? updated : v));
+      setToast("Trip time extended.");
+      setExtendRow(null);
+    } catch {
+      setToast("Failed to extend trip time.");
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const openAdd = () => {
@@ -130,8 +222,8 @@ export default function RequisitionsPage() {
   const handleSave = async () => {
     const selectedVehicle = vehicles.find((v) => v.id === form.vehicleId);
     const selectedDriver = drivers.find((d) => d.id === form.driverId);
-    if (!form.employeeName.trim() || !form.department.trim() || !selectedVehicle || !selectedDriver) {
-      setToast("Employee, department, vehicle and driver are required.");
+    if (!form.employeeName.trim() || !form.department.trim()) {
+      setToast("Employee and department are required.");
       return;
     }
     if (!route?.pickupCoords || !route?.destinationCoords) {
@@ -148,9 +240,9 @@ export default function RequisitionsPage() {
         pickupCoords: route.pickupCoords,
         destinationCoords: route.destinationCoords,
         routePolyline: route.routePolyline,
-        vehicleNumber: selectedVehicle.vehicleNumber,
-        vehicleCategory: selectedVehicle.category,
-        driverName: selectedDriver.name,
+        vehicleNumber: selectedVehicle?.vehicleNumber,
+        vehicleCategory: selectedVehicle?.category,
+        driverName: selectedDriver?.name,
         totalTravelTimeMinutes: route.durationMinutes ?? null,
         totalDistanceKm: route.distanceKm ?? null,
       };
@@ -173,7 +265,6 @@ export default function RequisitionsPage() {
             duplicateTicketId: false,
             gpsDataMissing: false,
           },
-          billed: false,
         });
         setToast("Requisition created.");
       }
@@ -186,6 +277,10 @@ export default function RequisitionsPage() {
   };
 
   const handleTripStart = async (row: Requisition) => {
+    if (!row.vehicleNumber) {
+      setToast("Assign a vehicle before starting the trip.");
+      return;
+    }
     setActionLoadingId(row.id);
     try {
       const updated = await update(row.id, { tripStartTime: new Date().toISOString() });
@@ -199,11 +294,15 @@ export default function RequisitionsPage() {
   };
 
   const handleTripEnd = async (row: Requisition) => {
+    if (!row.vehicleNumber) {
+      setToast("Assign a vehicle before ending the trip.");
+      return;
+    }
     setActionLoadingId(row.id);
     try {
       const updated = await update(row.id, { tripEndTime: new Date().toISOString(), tripStatus: "Completed" });
       setViewRow((v) => (v?.id === row.id ? updated : v));
-      setToast("Trip ended.");
+      setToast("Trip ended. Invoice generated.");
     } catch {
       setToast("Failed to end trip.");
     } finally {
@@ -239,7 +338,7 @@ export default function RequisitionsPage() {
 
   const flaggedCount = requisitions.filter((r) => Object.values(r.flags).some(Boolean)).length;
   const notBillable = requisitions.filter((r) => r.tripStatus === "Cancelled" || r.tripStatus === "Rejected").length;
-  const billedCount = requisitions.filter((r) => r.billed).length;
+  const invoicedCount = requisitions.filter((r) => findInvoiceForRequisition(r, invoices)).length;
 
   const sorted = [...requisitions].sort(
     (a, b) => new Date(b.requestDateTime).getTime() - new Date(a.requestDateTime).getTime()
@@ -248,17 +347,48 @@ export default function RequisitionsPage() {
   const filtered = sorted.filter((r) => {
     if (filter === "all") return true;
     if (filter === "flagged") return Object.values(r.flags).some(Boolean);
-    if (filter === "billed") return r.billed;
-    if (filter === "unbilled") return !r.billed && r.tripStatus === "Completed";
+    if (filter === "invoiced") return !!findInvoiceForRequisition(r, invoices);
+    if (filter === "uninvoiced") return !findInvoiceForRequisition(r, invoices) && r.tripStatus === "Completed";
     return r.tripStatus === filter;
   });
 
   const columns: GridColDef<Requisition>[] = [
-    { field: "ticketId", headerName: "Ticket ID", width: 150 },
+    {
+      field: "ticketId",
+      headerName: "Ticket ID",
+      width: 160,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Typography variant="body2">{params.value}</Typography>
+          {!!params.row.timeExtensions?.length && (
+            <Tooltip title="Trip time was extended — see details for reason.">
+              <MoreTimeRoundedIcon fontSize="small" color="warning" />
+            </Tooltip>
+          )}
+        </Box>
+      ),
+    },
     { field: "employeeName", headerName: "Employee", flex: 1, minWidth: 150 },
     { field: "department", headerName: "Department", flex: 1, minWidth: 160 },
-    { field: "vehicleNumber", headerName: "Vehicle", flex: 1.1, minWidth: 190 },
-    { field: "driverName", headerName: "Driver", flex: 1, minWidth: 160 },
+    {
+      field: "vehicleNumber",
+      headerName: "Vehicle",
+      flex: 1.1,
+      minWidth: 190,
+      renderCell: (params) =>
+        params.value ? (
+          `${params.value}${params.row.vehicleCategory ? ` — ${params.row.vehicleCategory}` : ""}`
+        ) : (
+          <Chip size="small" label="Unassigned" variant="outlined" />
+        ),
+    },
+    {
+      field: "driverName",
+      headerName: "Driver",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) => params.value || <Chip size="small" label="Unassigned" variant="outlined" />,
+    },
     {
       field: "totalDistanceKm",
       headerName: "Distance",
@@ -276,35 +406,6 @@ export default function RequisitionsPage() {
       headerName: "Trip Status",
       width: 130,
       renderCell: (params) => <StatusChip status={params.value} />,
-    },
-    {
-      field: "flags",
-      headerName: "Flags",
-      flex: 1.2,
-      minWidth: 180,
-      sortable: false,
-      renderCell: (params) => {
-        const labels = flagLabels(params.value);
-        if (labels.length === 0) return <Typography variant="caption" color="text.secondary">—</Typography>;
-        return (
-          <Tooltip title={labels.join(", ")}>
-            <Chip
-              size="small"
-              color="error"
-              icon={<WarningAmberRoundedIcon />}
-              label={`${labels.length} issue${labels.length > 1 ? "s" : ""}`}
-            />
-          </Tooltip>
-        );
-      },
-    },
-    {
-      field: "billed",
-      headerName: "Billed",
-      width: 90,
-      renderCell: (params) => (
-        <Chip size="small" label={params.value ? "Yes" : "No"} color={params.value ? "success" : "default"} variant={params.value ? "filled" : "outlined"} />
-      ),
     },
     {
       field: "actions",
@@ -351,8 +452,8 @@ export default function RequisitionsPage() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "success.main" }}>{billedCount}</Typography>
-              <Typography variant="body2" color="text.secondary">Billed Trips</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "success.main" }}>{invoicedCount}</Typography>
+              <Typography variant="body2" color="text.secondary">Invoiced Trips</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -387,7 +488,7 @@ export default function RequisitionsPage() {
           <ToggleButton value="Cancelled">Cancelled</ToggleButton>
           <ToggleButton value="Rejected">Rejected</ToggleButton>
           <ToggleButton value="flagged">Flagged</ToggleButton>
-          <ToggleButton value="unbilled">Unbilled</ToggleButton>
+          <ToggleButton value="uninvoiced">Uninvoiced</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
@@ -423,6 +524,72 @@ export default function RequisitionsPage() {
           <EditRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
           Edit
         </MenuItem>
+        <MenuItem
+          disabled={!menuRow || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected"}
+          onClick={() => {
+            if (menuRow) openAssign(menuRow);
+            closeMenu();
+          }}
+        >
+          <DirectionsCarRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
+          {menuRow?.vehicleNumber ? "Reassign Vehicle" : "Assign Vehicle"}
+        </MenuItem>
+        <MenuItem
+          disabled={!menuRow || !menuRow.vehicleNumber || !!menuRow.tripStartTime || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected"}
+          onClick={() => {
+            if (menuRow) handleTripStart(menuRow);
+            closeMenu();
+          }}
+        >
+          <PlayArrowRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
+          Start Trip
+        </MenuItem>
+        <MenuItem
+          disabled={
+            !menuRow ||
+            !menuRow.vehicleNumber ||
+            !menuRow.tripStartTime ||
+            !!menuRow.tripEndTime ||
+            menuRow.tripStatus === "Cancelled" ||
+            menuRow.tripStatus === "Rejected"
+          }
+          onClick={() => {
+            if (menuRow) handleTripEnd(menuRow);
+            closeMenu();
+          }}
+        >
+          <StopRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
+          End Trip
+        </MenuItem>
+        <MenuItem
+          disabled={
+            !menuRow ||
+            !menuRow.tripStartTime ||
+            !!menuRow.tripEndTime ||
+            menuRow.tripStatus === "Cancelled" ||
+            menuRow.tripStatus === "Rejected"
+          }
+          onClick={() => {
+            if (menuRow) openExtend(menuRow);
+            closeMenu();
+          }}
+        >
+          <MoreTimeRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
+          Extend Time
+        </MenuItem>
+        <MenuItem
+          disabled={!menuRow || !findInvoiceForRequisition(menuRow, invoices)}
+          onClick={() => {
+            if (menuRow) {
+              const invoice = findInvoiceForRequisition(menuRow, invoices);
+              if (invoice) downloadInvoicePdf(invoice);
+            }
+            closeMenu();
+          }}
+        >
+          <ReceiptLongRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
+          Download Invoice
+        </MenuItem>
         <Divider />
         <MenuItem
           disabled={!menuRow || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected" || menuRow.tripStatus === "Completed"}
@@ -446,6 +613,108 @@ export default function RequisitionsPage() {
         </MenuItem>
       </Menu>
 
+      <Dialog open={!!assignRow} onClose={() => setAssignRow(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          Assign Vehicle
+          {assignRow && (
+            <Typography variant="body2" color="text.secondary">
+              {assignRow.ticketId}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 0.5 }}>
+            <TextField
+              select
+              label="Vehicle"
+              fullWidth
+              size="small"
+              value={assignForm.vehicleId}
+              onChange={(e) => setAssignForm({ ...assignForm, vehicleId: e.target.value })}
+            >
+              <MenuItem value="">
+                <em>Unassigned</em>
+              </MenuItem>
+              {vehicles
+                .filter((v) => v.status === "Active" || v.id === assignForm.vehicleId)
+                .map((v) => (
+                  <MenuItem key={v.id} value={v.id}>
+                    {v.vehicleNumber} — {v.category}
+                  </MenuItem>
+                ))}
+            </TextField>
+            <TextField
+              select
+              label="Driver"
+              fullWidth
+              size="small"
+              value={assignForm.driverId}
+              onChange={(e) => setAssignForm({ ...assignForm, driverId: e.target.value })}
+            >
+              <MenuItem value="">
+                <em>Unassigned</em>
+              </MenuItem>
+              {drivers
+                .filter((d) => d.status === "Active" || d.id === assignForm.driverId)
+                .map((d) => (
+                  <MenuItem key={d.id} value={d.id}>
+                    {d.name} — {d.mobile}
+                  </MenuItem>
+                ))}
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setAssignRow(null)}>Cancel</Button>
+          <Button variant="contained" onClick={handleAssignSave} disabled={saving}>
+            {saving ? "Saving..." : "Assign"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!extendRow} onClose={() => setExtendRow(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          Extend Trip Time
+          {extendRow && (
+            <Typography variant="body2" color="text.secondary">
+              {extendRow.ticketId}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 0.5 }}>
+            <TextField
+              label="New Trip End Time"
+              type="datetime-local"
+              fullWidth
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={extendEndTime}
+              onChange={(e) => setExtendEndTime(e.target.value)}
+            />
+            <TextField
+              label="Reason for Extension (required)"
+              fullWidth
+              multiline
+              minRows={2}
+              size="small"
+              value={extendNote}
+              onChange={(e) => setExtendNote(e.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setExtendRow(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleExtendSave}
+            disabled={actionLoadingId === extendRow?.id || !extendNote.trim()}
+          >
+            {actionLoadingId === extendRow?.id ? "Saving..." : "Extend"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingId ? "Edit Requisition" : "New Requisition"}</DialogTitle>
         <DialogContent>
@@ -468,12 +737,16 @@ export default function RequisitionsPage() {
             </Stack>
             <TextField
               select
-              label="Vehicle"
+              label="Vehicle (optional)"
+              helperText="Leave unassigned to assign a vehicle later from the list."
               fullWidth
               size="small"
               value={form.vehicleId}
               onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
             >
+              <MenuItem value="">
+                <em>Unassigned</em>
+              </MenuItem>
               {vehicles
                 .filter((v) => v.status === "Active" || v.id === form.vehicleId)
                 .map((v) => (
@@ -484,12 +757,15 @@ export default function RequisitionsPage() {
             </TextField>
             <TextField
               select
-              label="Driver"
+              label="Driver (optional)"
               fullWidth
               size="small"
               value={form.driverId}
               onChange={(e) => setForm({ ...form, driverId: e.target.value })}
             >
+              <MenuItem value="">
+                <em>Unassigned</em>
+              </MenuItem>
               {drivers
                 .filter((d) => d.status === "Active" || d.id === form.driverId)
                 .map((d) => (
@@ -554,11 +830,13 @@ export default function RequisitionsPage() {
                   <Stack spacing={1}>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Vehicle</Typography>
-                      <Typography variant="body2">{viewRow.vehicleNumber} — {viewRow.vehicleCategory}</Typography>
+                      <Typography variant="body2">
+                        {viewRow.vehicleNumber ? `${viewRow.vehicleNumber} — ${viewRow.vehicleCategory}` : "Unassigned"}
+                      </Typography>
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Driver</Typography>
-                      <Typography variant="body2">{viewRow.driverName}</Typography>
+                      <Typography variant="body2">{viewRow.driverName || "Unassigned"}</Typography>
                     </Box>
                   </Stack>
 
@@ -571,17 +849,57 @@ export default function RequisitionsPage() {
                         {viewRow.tripStartTime ? new Date(viewRow.tripStartTime).toLocaleString() : "—"}
                       </Typography>
                     </Box>
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <Typography variant="body2" color="text.secondary">Trip End</Typography>
                       <Typography variant="body2">
                         {viewRow.tripEndTime ? new Date(viewRow.tripEndTime).toLocaleString() : "—"}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography variant="body2" color="text.secondary">Billed</Typography>
-                      <Chip size="small" label={viewRow.billed ? "Yes" : "No"} color={viewRow.billed ? "success" : "default"} variant={viewRow.billed ? "filled" : "outlined"} />
+                      <Typography variant="body2" color="text.secondary">Invoiced</Typography>
+                      {(() => {
+                        const invoice = findInvoiceForRequisition(viewRow, invoices);
+                        return (
+                          <Chip
+                            size="small"
+                            label={invoice ? invoice.invoiceNumber : "No"}
+                            color={invoice ? "success" : "default"}
+                            variant={invoice ? "filled" : "outlined"}
+                          />
+                        );
+                      })()}
                     </Box>
                   </Stack>
+
+                  {!!viewRow.timeExtensions?.length && (
+                    <>
+                      <Divider />
+                      <Stack spacing={1}>
+                        <Typography variant="body2" color="text.secondary">Time Extension</Typography>
+                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                          {viewRow.timeExtensions.map((ext, idx) => (
+                            <Tooltip
+                              key={idx}
+                              title={
+                                <>
+                                  <div>Extended at {new Date(ext.extendedAt).toLocaleString()} by {ext.extendedBy}</div>
+                                  <div>New end time: {new Date(ext.newEndTime).toLocaleString()}</div>
+                                  <div>Note: {ext.note}</div>
+                                </>
+                              }
+                            >
+                              <Chip
+                                size="small"
+                                color="warning"
+                                icon={<MoreTimeRoundedIcon />}
+                                label={`Extended ${new Date(ext.extendedAt).toLocaleString()}`}
+                              />
+                            </Tooltip>
+                          ))}
+                        </Box>
+                      </Stack>
+                    </>
+                  )}
 
                   {flagLabels(viewRow.flags).length > 0 && (
                     <>
@@ -626,11 +944,22 @@ export default function RequisitionsPage() {
           >
             Edit
           </Button>
+          {viewRow && findInvoiceForRequisition(viewRow, invoices) && (
+            <Button
+              startIcon={<ReceiptLongRoundedIcon />}
+              onClick={() => {
+                const invoice = findInvoiceForRequisition(viewRow, invoices);
+                if (invoice) downloadInvoicePdf(invoice);
+              }}
+            >
+              Download Invoice
+            </Button>
+          )}
           <Button
             variant="contained"
             color="success"
             startIcon={<PlayArrowRoundedIcon />}
-            disabled={!viewRow || actionLoadingId === viewRow.id || !!viewRow.tripStartTime}
+            disabled={!viewRow || actionLoadingId === viewRow.id || !!viewRow.tripStartTime || !viewRow.vehicleNumber}
             onClick={() => viewRow && handleTripStart(viewRow)}
           >
             Start Trip
@@ -639,7 +968,13 @@ export default function RequisitionsPage() {
             variant="contained"
             color="error"
             startIcon={<StopRoundedIcon />}
-            disabled={!viewRow || actionLoadingId === viewRow.id || !viewRow.tripStartTime || !!viewRow.tripEndTime}
+            disabled={
+              !viewRow ||
+              actionLoadingId === viewRow.id ||
+              !viewRow.tripStartTime ||
+              !!viewRow.tripEndTime ||
+              !viewRow.vehicleNumber
+            }
             onClick={() => viewRow && handleTripEnd(viewRow)}
           >
             End Trip

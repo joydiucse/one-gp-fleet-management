@@ -10,8 +10,8 @@ export default function DriverUtilizationReportPage() {
   const { requisitions, loading } = useReportData();
 
   const rows = React.useMemo(() => {
-    const trips = groupSum(requisitions, (r) => r.driverName, () => 1);
-    const distance = groupSum(requisitions, (r) => r.driverName, (r) => r.totalDistanceKm ?? 0);
+    const trips = groupSum(requisitions, (r) => r.driverName ?? "Unassigned", () => 1);
+    const distance = groupSum(requisitions, (r) => r.driverName ?? "Unassigned", (r) => r.totalDistanceKm ?? 0);
     return Array.from(trips.keys()).map((driver, idx) => ({
       id: idx,
       driver,

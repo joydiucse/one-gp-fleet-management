@@ -18,7 +18,8 @@ export const navItems: NavItem[] = [
     children: [
       { label: "Vehicle Master", href: "/vehicles" },
       { label: "Driver Master", href: "/drivers" },
-      { label: "Rate Card", href: "/rate-card" },
+      { label: "Vehicle Category", href: "/vehicle-categories" },
+      { label: "Fuel Type", href: "/fuel-types" },
     ],
   },
   { label: "Trip Requisitions", href: "/requisitions", iconKey: "trip" },

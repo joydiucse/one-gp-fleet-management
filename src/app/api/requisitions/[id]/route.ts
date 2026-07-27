@@ -33,7 +33,6 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const previous = items[idx];
   const updated = { ...previous, ...data, id } as Requisition;
   const justCompleted = updated.tripStatus === "Completed" && previous.tripStatus !== "Completed";
-  if (justCompleted) updated.billed = true;
 
   items[idx] = updated;
   await writeCollection("requisitions", items);

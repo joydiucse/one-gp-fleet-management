@@ -1,14 +1,19 @@
-export type VehicleCategory =
-  | "Sedan"
-  | "SUV"
-  | "Microbus (7 Seater)"
-  | "Microbus (12 Seater)"
-  | "Pickup"
-  | "Minibus"
-  | "Ambulance"
-  | "Others";
+// Backed by the managed Vehicle Category / Fuel Type master lists
+// (/api/vehicle-categories, /api/fuel-types) rather than a fixed set of
+// literals, so values added there are valid without a type change here.
+export type VehicleCategory = string;
 
-export type FuelType = "CNG" | "LPG" | "Octane" | "Diesel" | "Hybrid";
+export type FuelType = string;
+
+export interface VehicleCategoryItem {
+  id: string;
+  name: string;
+}
+
+export interface FuelTypeItem {
+  id: string;
+  name: string;
+}
 
 export type VehicleStatus = "Active" | "Inactive" | "Maintenance";
 
@@ -63,6 +68,14 @@ export interface GeoPoint {
   lng: number;
 }
 
+export interface TimeExtension {
+  extendedAt: string;
+  previousEndTime: string | null;
+  newEndTime: string;
+  note: string;
+  extendedBy: string;
+}
+
 export interface Requisition {
   id: string;
   ticketId: string;
@@ -75,16 +88,16 @@ export interface Requisition {
   pickupCoords?: GeoPoint;
   destinationCoords?: GeoPoint;
   routePolyline?: GeoPoint[];
-  vehicleNumber: string;
-  vehicleCategory: VehicleCategory;
-  driverName: string;
+  vehicleNumber?: string;
+  vehicleCategory?: VehicleCategory;
+  driverName?: string;
   tripStartTime: string | null;
   tripEndTime: string | null;
   totalTravelTimeMinutes: number | null;
   totalDistanceKm: number | null;
   tripStatus: TripStatus;
   flags: FlagInfo;
-  billed: boolean;
+  timeExtensions?: TimeExtension[];
 }
 
 export type InvoiceStatus = "Draft" | "Pending Approval" | "Approved" | "Paid" | "Rejected";

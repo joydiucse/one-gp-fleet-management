@@ -21,8 +21,7 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import PageHeader from "@/components/common/PageHeader";
 import StatusChip from "@/components/common/StatusChip";
-import { VEHICLE_CATEGORIES, FUEL_TYPES } from "@/data/rateCards";
-import { Vehicle } from "@/types";
+import { Vehicle, VehicleCategoryItem, FuelTypeItem } from "@/types";
 import { useCollection } from "@/lib/useCollection";
 
 const emptyVehicle: Omit<Vehicle, "id"> = {
@@ -39,6 +38,8 @@ const emptyVehicle: Omit<Vehicle, "id"> = {
 
 export default function VehiclesPage() {
   const { data: rows, loading, create, update, remove } = useCollection<Vehicle>("/api/vehicles");
+  const { data: categories } = useCollection<VehicleCategoryItem>("/api/vehicle-categories");
+  const { data: fuelTypes } = useCollection<FuelTypeItem>("/api/fuel-types");
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Vehicle | null>(null);
   const [form, setForm] = React.useState<Omit<Vehicle, "id">>(emptyVehicle);
@@ -188,9 +189,9 @@ export default function VehiclesPage() {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value as Vehicle["category"] })}
               >
-                {VEHICLE_CATEGORIES.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
+                {categories.map((c) => (
+                  <MenuItem key={c.id} value={c.name}>
+                    {c.name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -203,9 +204,9 @@ export default function VehiclesPage() {
                 value={form.fuelType}
                 onChange={(e) => setForm({ ...form, fuelType: e.target.value as Vehicle["fuelType"] })}
               >
-                {FUEL_TYPES.map((f) => (
-                  <MenuItem key={f} value={f}>
-                    {f}
+                {fuelTypes.map((f) => (
+                  <MenuItem key={f.id} value={f.name}>
+                    {f.name}
                   </MenuItem>
                 ))}
               </TextField>

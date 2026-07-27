@@ -22,8 +22,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import PageHeader from "@/components/common/PageHeader";
-import { VEHICLE_CATEGORIES, FUEL_TYPES } from "@/data/rateCards";
-import { RateCard } from "@/types";
+import { RateCard, VehicleCategoryItem, FuelTypeItem } from "@/types";
 import { useCollection } from "@/lib/useCollection";
 
 const emptyRate: Omit<RateCard, "id"> = {
@@ -36,6 +35,8 @@ const emptyRate: Omit<RateCard, "id"> = {
 
 export default function RateCardPage() {
   const { data: rows, loading, create, update, remove } = useCollection<RateCard>("/api/rate-cards");
+  const { data: categories } = useCollection<VehicleCategoryItem>("/api/vehicle-categories");
+  const { data: fuelTypes } = useCollection<FuelTypeItem>("/api/fuel-types");
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<RateCard | null>(null);
   const [form, setForm] = React.useState<Omit<RateCard, "id">>(emptyRate);
@@ -152,8 +153,8 @@ export default function RateCardPage() {
       />
 
       <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
-        <Chip label={`${VEHICLE_CATEGORIES.length} Vehicle Categories`} variant="outlined" />
-        <Chip label={`${FUEL_TYPES.length} Fuel Types`} variant="outlined" />
+        <Chip label={`${categories.length} Vehicle Categories`} variant="outlined" />
+        <Chip label={`${fuelTypes.length} Fuel Types`} variant="outlined" />
         <Chip label={`${rows.length} Configured Rate Cards`} color="primary" variant="outlined" />
       </Stack>
 
@@ -182,9 +183,9 @@ export default function RateCardPage() {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value as RateCard["category"] })}
               >
-                {VEHICLE_CATEGORIES.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
+                {categories.map((c) => (
+                  <MenuItem key={c.id} value={c.name}>
+                    {c.name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -197,9 +198,9 @@ export default function RateCardPage() {
                 value={form.fuelType}
                 onChange={(e) => setForm({ ...form, fuelType: e.target.value as RateCard["fuelType"] })}
               >
-                {FUEL_TYPES.map((f) => (
-                  <MenuItem key={f} value={f}>
-                    {f}
+                {fuelTypes.map((f) => (
+                  <MenuItem key={f.id} value={f.name}>
+                    {f.name}
                   </MenuItem>
                 ))}
               </TextField>
