@@ -14,20 +14,42 @@ function getOrigin(req: NextRequest) {
   return `${proto}://${host}`;
 }
 
+// Driver sessions share the same session cookie as office-user sessions, but
+// drivers only get the in-app-view mobile UI plus the handful of read/update
+// endpoints that UI needs — not the desktop app or its admin-only APIs.
+function isAllowedForDriver(pathname: string, method: string): boolean {
+  if (pathname.startsWith("/in-app-view")) return true;
+  if (pathname.startsWith("/api/driver-auth")) return true;
+  if (pathname === "/api/auth/me" || pathname === "/api/auth/logout") return true;
+  if (pathname === "/api/requisitions" && method === "GET") return true;
+  if (/^\/api\/requisitions\/[^/]+$/.test(pathname) && (method === "GET" || method === "PUT")) return true;
+  if (pathname === "/api/vehicles" && method === "GET") return true;
+  if (pathname === "/api/invoices" && method === "GET") return true;
+  return false;
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const payload = token ? await verifySession(token) : null;
   const origin = getOrigin(req);
+  const isDriver = payload?.role === "Driver";
 
   if (pathname === "/login") {
     if (payload) {
-      return NextResponse.redirect(new URL("/", origin));
+      return NextResponse.redirect(new URL(isDriver ? "/in-app-view" : "/", origin));
     }
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/api/auth")) {
+  if (pathname === "/in-app-view/login") {
+    if (payload) {
+      return NextResponse.redirect(new URL("/in-app-view", origin));
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/driver-auth")) {
     return NextResponse.next();
   }
 
@@ -35,9 +57,17 @@ export async function proxy(req: NextRequest) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const loginUrl = new URL("/login", origin);
+    const loginPath = pathname.startsWith("/in-app-view") ? "/in-app-view/login" : "/login";
+    const loginUrl = new URL(loginPath, origin);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (isDriver && !isAllowedForDriver(pathname, req.method)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/in-app-view", origin));
   }
 
   return NextResponse.next();

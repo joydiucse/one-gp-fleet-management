@@ -1,0 +1,16 @@
+[
+  { "id": "RC-001", "category": "Sedan", "fuelType": "Octane", "monthlyFixedRent": 28000, "perKmRate": 12.5, "otRatePerHour": 150 },
+  { "id": "RC-002", "category": "Sedan", "fuelType": "CNG", "monthlyFixedRent": 24000, "perKmRate": 9.0, "otRatePerHour": 150 },
+  { "id": "RC-003", "category": "SUV", "fuelType": "Diesel", "monthlyFixedRent": 42000, "perKmRate": 16.0, "otRatePerHour": 200 },
+  { "id": "RC-004", "category": "SUV", "fuelType": "Octane", "monthlyFixedRent": 45000, "perKmRate": 17.5, "otRatePerHour": 200 },
+  { "id": "RC-005", "category": "Microbus (7 Seater)", "fuelType": "CNG", "monthlyFixedRent": 32000, "perKmRate": 11.0, "otRatePerHour": 175 },
+  { "id": "RC-006", "category": "Microbus (7 Seater)", "fuelType": "Diesel", "monthlyFixedRent": 35000, "perKmRate": 13.5, "otRatePerHour": 175 },
+  { "id": "RC-007", "category": "Microbus (12 Seater)", "fuelType": "Diesel", "monthlyFixedRent": 46000, "perKmRate": 15.0, "otRatePerHour": 220 },
+  { "id": "RC-008", "category": "Pickup", "fuelType": "Diesel", "monthlyFixedRent": 38000, "perKmRate": 14.0, "otRatePerHour": 190 },
+  { "id": "RC-009", "category": "Minibus", "fuelType": "Diesel", "monthlyFixedRent": 52000, "perKmRate": 18.0, "otRatePerHour": 250 },
+  { "id": "RC-010", "category": "Ambulance", "fuelType": "Diesel", "monthlyFixedRent": 55000, "perKmRate": 20.0, "otRatePerHour": 250 },
+  { "id": "RC-011", "category": "Others", "fuelType": "Hybrid", "monthlyFixedRent": 30000, "perKmRate": 10.0, "otRatePerHour": 160 },
+  { "id": "RC-012", "category": "Sedan", "fuelType": "Hybrid", "monthlyFixedRent": 31000, "perKmRate": 10.5, "otRatePerHour": 150 },
+  { "id": "RC-013", "category": "SUV", "fuelType": "LPG", "monthlyFixedRent": 40000, "perKmRate": 13.0, "otRatePerHour": 200 },
+  { "id": "RC-014", "category": "Microbus (12 Seater)", "fuelType": "CNG", "monthlyFixedRent": 40000, "perKmRate": 12.0, "otRatePerHour": 220 }
+]

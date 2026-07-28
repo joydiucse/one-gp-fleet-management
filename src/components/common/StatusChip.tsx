@@ -8,6 +8,7 @@ const colorMap: Record<string, "success" | "warning" | "error" | "default" | "in
   Inactive: "default",
   Maintenance: "warning",
   "In Progress": "info",
+  Started: "warning",
   "Pending Approval": "warning",
   Draft: "default",
   Suspended: "error",

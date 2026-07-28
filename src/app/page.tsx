@@ -78,10 +78,6 @@ export default function DashboardPage() {
     .sort((a, b) => (a.requestDateTime < b.requestDateTime ? 1 : -1))
     .slice(0, 6);
 
-  const recentInvoices = [...invoices]
-    .sort((a, b) => (a.generatedDate < b.generatedDate ? 1 : -1))
-    .slice(0, 5);
-
   return (
     <Box>
       <PageHeader
@@ -142,7 +138,7 @@ export default function DashboardPage() {
       </Grid>
 
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, lg: 7 }}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
@@ -174,47 +170,6 @@ export default function DashboardPage() {
                         <TableCell>{r.totalDistanceKm ? `${r.totalDistanceKm} km` : "—"}</TableCell>
                         <TableCell>
                           <StatusChip status={r.tripStatus} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Recent Invoices
-                </Typography>
-                <Button size="small" component={Link} href="/billing">
-                  View All
-                </Button>
-              </Box>
-              <Divider sx={{ mb: 1 }} />
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Invoice</TableCell>
-                      <TableCell>Vehicle</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentInvoices.map((inv) => (
-                      <TableRow key={inv.id} hover>
-                        <TableCell>
-                          <Link href={`/billing/${inv.id}`}>{inv.invoiceNumber}</Link>
-                        </TableCell>
-                        <TableCell>{inv.vehicleNumber}</TableCell>
-                        <TableCell>{formatBDT(inv.totalBill)}</TableCell>
-                        <TableCell>
-                          <StatusChip status={inv.status} />
                         </TableCell>
                       </TableRow>
                     ))}

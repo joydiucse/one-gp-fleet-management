@@ -1,0 +1,38 @@
+[
+  {
+    "id": "VC-001",
+    "name": "Sedan"
+  },
+  {
+    "id": "VC-002",
+    "name": "SUV"
+  },
+  {
+    "id": "VC-003",
+    "name": "Microbus (7 Seater)"
+  },
+  {
+    "id": "VC-004",
+    "name": "Microbus (12 Seater)"
+  },
+  {
+    "id": "VC-005",
+    "name": "Pickup"
+  },
+  {
+    "id": "VC-006",
+    "name": "Minibus"
+  },
+  {
+    "id": "VC-007",
+    "name": "Ambulance"
+  },
+  {
+    "id": "VC-008",
+    "name": "Others"
+  },
+  {
+    "name": "test",
+    "id": "VC-009"
+  }
+]

@@ -7,13 +7,14 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | "Driver";
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  loginAsDriver: (mobile: string, password: string) => Promise<{ ok: boolean; message?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -56,13 +57,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { ok: false, message: data.error ?? "Login failed." };
   }, []);
 
+  const loginAsDriver = React.useCallback(async (mobile: string, password: string) => {
+    const res = await fetch("/api/driver-auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mobile, password }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setUser(data.user);
+      return { ok: true };
+    }
+    return { ok: false, message: data.error ?? "Login failed." };
+  }, []);
+
   const logout = React.useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refresh }}>
+    <AuthContext.Provider value={{ user, loading, login, loginAsDriver, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );

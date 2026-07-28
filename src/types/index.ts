@@ -27,6 +27,12 @@ export interface Vehicle {
   monthlyFixedRent: number;
   perKmRate: number;
   otRate: number;
+  personalUsageBill: number;
+  tollCharge: number;
+  parkingCharge: number;
+  startupFuelCharge: number;
+  mobileBill: number;
+  otherCharge: number;
   status: VehicleStatus;
 }
 
@@ -53,7 +59,7 @@ export interface RateCard {
   otRatePerHour: number;
 }
 
-export type TripStatus = "Completed" | "In Progress" | "Cancelled" | "Rejected";
+export type TripStatus = "In Progress" | "Started" | "Completed" | "Cancelled" | "Rejected";
 
 export interface FlagInfo {
   missingStartEndTime: boolean;
@@ -91,6 +97,7 @@ export interface Requisition {
   vehicleNumber?: string;
   vehicleCategory?: VehicleCategory;
   driverName?: string;
+  vendor?: string;
   tripStartTime: string | null;
   tripEndTime: string | null;
   totalTravelTimeMinutes: number | null;

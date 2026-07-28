@@ -3,6 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Box from "@mui/material/Box";
+import { alpha } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Grid from "@mui/material/Grid";
@@ -10,8 +11,11 @@ import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import Tooltip from "@mui/material/Tooltip";
 import Stack from "@mui/material/Stack";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Select from "@mui/material/Select";
+import InputAdornment from "@mui/material/InputAdornment";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -37,6 +41,16 @@ import BlockRoundedIcon from "@mui/icons-material/BlockRounded";
 import DirectionsCarRoundedIcon from "@mui/icons-material/DirectionsCarRounded";
 import MoreTimeRoundedIcon from "@mui/icons-material/MoreTimeRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
+import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
+import FlagRoundedIcon from "@mui/icons-material/FlagRounded";
+import DoNotDisturbAltRoundedIcon from "@mui/icons-material/DoNotDisturbAltRounded";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import PageHeader from "@/components/common/PageHeader";
 import StatusChip from "@/components/common/StatusChip";
@@ -44,7 +58,8 @@ import { Requisition, Vehicle, Driver, Invoice } from "@/types";
 import { useCollection } from "@/lib/useCollection";
 import { useInvoiceStore } from "@/store/InvoiceStore";
 import { useAuth } from "@/store/AuthContext";
-import { downloadInvoicePdf } from "@/lib/invoicePdf";
+import { downloadTripInvoicePdf } from "@/lib/invoicePdf";
+import { formatBDT, calculateDistanceCharge } from "@/lib/billing";
 import { RoutePickerResult } from "@/components/requisitions/RoutePickerMap";
 
 const RoutePickerMap = dynamic(() => import("@/components/requisitions/RoutePickerMap"), {
@@ -70,6 +85,7 @@ const emptyForm = {
   department: "",
   vehicleId: "",
   driverId: "",
+  vendor: "",
 };
 
 function flagLabels(flags: Requisition["flags"]): string[] {
@@ -84,7 +100,7 @@ function flagLabels(flags: Requisition["flags"]): string[] {
 }
 
 function findInvoiceForRequisition(requisition: Requisition, invoices: Invoice[]): Invoice | undefined {
-  if (!requisition.vehicleNumber) return undefined;
+  if (!requisition.vehicleNumber || requisition.tripStatus !== "Completed") return undefined;
   const billingMonth = requisition.requestDateTime.slice(0, 7);
   return invoices.find((inv) => inv.vehicleNumber === requisition.vehicleNumber && inv.billingMonth === billingMonth);
 }
@@ -96,6 +112,7 @@ export default function RequisitionsPage() {
   const { data: drivers } = useCollection<Driver>("/api/drivers");
   const { invoices } = useInvoiceStore();
   const [filter, setFilter] = React.useState<string>("all");
+  const [search, setSearch] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [viewRow, setViewRow] = React.useState<Requisition | null>(null);
@@ -111,6 +128,7 @@ export default function RequisitionsPage() {
   const [extendRow, setExtendRow] = React.useState<Requisition | null>(null);
   const [extendEndTime, setExtendEndTime] = React.useState("");
   const [extendNote, setExtendNote] = React.useState("");
+  const [invoiceViewRow, setInvoiceViewRow] = React.useState<Requisition | null>(null);
 
   const closeMenu = () => {
     setMenuAnchor(null);
@@ -206,6 +224,7 @@ export default function RequisitionsPage() {
       department: row.department,
       vehicleId: matchedVehicle?.id ?? "",
       driverId: matchedDriver?.id ?? "",
+      vendor: row.vendor ?? "",
     });
     setRoute({
       pickupLabel: row.pickupLocation,
@@ -243,6 +262,7 @@ export default function RequisitionsPage() {
         vehicleNumber: selectedVehicle?.vehicleNumber,
         vehicleCategory: selectedVehicle?.category,
         driverName: selectedDriver?.name,
+        vendor: form.vendor || undefined,
         totalTravelTimeMinutes: route.durationMinutes ?? null,
         totalDistanceKm: route.distanceKm ?? null,
       };
@@ -277,13 +297,13 @@ export default function RequisitionsPage() {
   };
 
   const handleTripStart = async (row: Requisition) => {
-    if (!row.vehicleNumber) {
-      setToast("Assign a vehicle before starting the trip.");
+    if (!row.vehicleNumber || !row.driverName) {
+      setToast("Assign a vehicle and driver before starting the trip.");
       return;
     }
     setActionLoadingId(row.id);
     try {
-      const updated = await update(row.id, { tripStartTime: new Date().toISOString() });
+      const updated = await update(row.id, { tripStartTime: new Date().toISOString(), tripStatus: "Started" });
       setViewRow((v) => (v?.id === row.id ? updated : v));
       setToast("Trip started.");
     } catch {
@@ -300,7 +320,11 @@ export default function RequisitionsPage() {
     }
     setActionLoadingId(row.id);
     try {
-      const updated = await update(row.id, { tripEndTime: new Date().toISOString(), tripStatus: "Completed" });
+      const tripEndTime = new Date().toISOString();
+      const totalTravelTimeMinutes = row.tripStartTime
+        ? Math.round((new Date(tripEndTime).getTime() - new Date(row.tripStartTime).getTime()) / 60000)
+        : row.totalTravelTimeMinutes;
+      const updated = await update(row.id, { tripEndTime, tripStatus: "Completed", totalTravelTimeMinutes });
       setViewRow((v) => (v?.id === row.id ? updated : v));
       setToast("Trip ended. Invoice generated.");
     } catch {
@@ -345,61 +369,125 @@ export default function RequisitionsPage() {
   );
 
   const filtered = sorted.filter((r) => {
-    if (filter === "all") return true;
-    if (filter === "flagged") return Object.values(r.flags).some(Boolean);
-    if (filter === "invoiced") return !!findInvoiceForRequisition(r, invoices);
-    if (filter === "uninvoiced") return !findInvoiceForRequisition(r, invoices) && r.tripStatus === "Completed";
-    return r.tripStatus === filter;
+    if (filter === "flagged" && !Object.values(r.flags).some(Boolean)) return false;
+    if (filter === "invoiced" && !findInvoiceForRequisition(r, invoices)) return false;
+    if (filter === "uninvoiced" && (findInvoiceForRequisition(r, invoices) || r.tripStatus !== "Completed")) return false;
+    if (!["all", "flagged", "invoiced", "uninvoiced"].includes(filter) && r.tripStatus !== filter) return false;
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const haystack = [r.ticketId, r.employeeName, r.department, r.vehicleNumber, r.driverName, r.vendor]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+
+    return true;
   });
 
   const columns: GridColDef<Requisition>[] = [
     {
       field: "ticketId",
-      headerName: "Ticket ID",
-      width: 160,
+      headerName: "Requisition Id",
+      width: 150,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <Typography variant="body2">{params.value}</Typography>
-          {!!params.row.timeExtensions?.length && (
-            <Tooltip title="Trip time was extended — see details for reason.">
-              <MoreTimeRoundedIcon fontSize="small" color="warning" />
-            </Tooltip>
-          )}
+        <Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{params.value}</Typography>
+            {!!params.row.timeExtensions?.length && (
+              <Tooltip title="Trip time was extended — see details for reason.">
+                <MoreTimeRoundedIcon fontSize="small" color="warning" />
+              </Tooltip>
+            )}
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Added {new Date(params.row.requestDateTime).toLocaleString()}
+          </Typography>
         </Box>
       ),
     },
-    { field: "employeeName", headerName: "Employee", flex: 1, minWidth: 150 },
-    { field: "department", headerName: "Department", flex: 1, minWidth: 160 },
+    {
+      field: "employeeName",
+      headerName: "Employee",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="body2">{params.value}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {params.row.department}
+            {params.row.vendor ? ` • ${params.row.vendor}` : ""}
+          </Typography>
+        </Box>
+      ),
+    },
     {
       field: "vehicleNumber",
       headerName: "Vehicle",
-      flex: 1.1,
-      minWidth: 190,
-      renderCell: (params) =>
-        params.value ? (
-          `${params.value}${params.row.vehicleCategory ? ` — ${params.row.vehicleCategory}` : ""}`
-        ) : (
-          <Chip size="small" label="Unassigned" variant="outlined" />
-        ),
+      flex: 1,
+      minWidth: 180,
+      renderCell: (params) => {
+        if (!params.value) return <Chip size="small" label="Unassigned" variant="outlined" />;
+        const vehicle = vehicles.find((v) => v.vehicleNumber === params.value);
+        return (
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{params.value}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {params.row.vehicleCategory || vehicle?.category || "—"}
+              {vehicle ? ` • ৳${vehicle.perKmRate}/km` : ""}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "driverName",
       headerName: "Driver",
       flex: 1,
       minWidth: 160,
-      renderCell: (params) => params.value || <Chip size="small" label="Unassigned" variant="outlined" />,
+      renderCell: (params) => {
+        if (!params.value) return <Chip size="small" label="Unassigned" variant="outlined" />;
+        const driver = drivers.find((d) => d.name === params.value);
+        return (
+          <Box>
+            <Typography variant="body2">{params.value}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {driver?.mobile || "—"}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "totalDistanceKm",
-      headerName: "Distance",
-      width: 100,
-      renderCell: (params) => (params.value ? `${params.value} km` : "—"),
+      headerName: "Distance / Time",
+      width: 120,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="body2">{params.value ? `${params.value} km` : "—"}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {params.row.totalTravelTimeMinutes
+              ? `${Math.floor(params.row.totalTravelTimeMinutes / 60)}h ${params.row.totalTravelTimeMinutes % 60}m`
+              : "—"}
+          </Typography>
+        </Box>
+      ),
     },
     {
-      field: "totalTravelTimeMinutes",
-      headerName: "Travel Time",
-      width: 110,
-      renderCell: (params) => (params.value ? `${Math.floor(params.value / 60)}h ${params.value % 60}m` : "—"),
+      field: "tripStartTime",
+      headerName: "Start / End",
+      width: 170,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="caption" component="div" color="text.secondary">
+            Start: {params.value ? new Date(params.value).toLocaleString() : "—"}
+          </Typography>
+          <Typography variant="caption" component="div" color="text.secondary">
+            End: {params.row.tripEndTime ? new Date(params.row.tripEndTime).toLocaleString() : "—"}
+          </Typography>
+        </Box>
+      ),
     },
     {
       field: "tripStatus",
@@ -443,65 +531,156 @@ export default function RequisitionsPage() {
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>{requisitions.length}</Typography>
-              <Typography variant="body2" color="text.secondary">Total Requisitions</Typography>
+            <CardContent sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5, "&:last-child": { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 1.5,
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+                  color: "primary.main",
+                  flexShrink: 0,
+                }}
+              >
+                <AssignmentRoundedIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{requisitions.length}</Typography>
+                <Typography variant="caption" color="text.secondary">Total Requisitions</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "success.main" }}>{invoicedCount}</Typography>
-              <Typography variant="body2" color="text.secondary">Invoiced Trips</Typography>
+            <CardContent sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5, "&:last-child": { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 1.5,
+                  bgcolor: (t) => alpha(t.palette.success.main, 0.12),
+                  color: "success.main",
+                  flexShrink: 0,
+                }}
+              >
+                <TaskAltRoundedIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: "success.main" }}>{invoicedCount}</Typography>
+                <Typography variant="caption" color="text.secondary">Invoiced Trips</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "error.main" }}>{flaggedCount}</Typography>
-              <Typography variant="body2" color="text.secondary">Flagged for Review</Typography>
+            <CardContent sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5, "&:last-child": { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 1.5,
+                  bgcolor: (t) => alpha(t.palette.error.main, 0.12),
+                  color: "error.main",
+                  flexShrink: 0,
+                }}
+              >
+                <FlagRoundedIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: "error.main" }}>{flaggedCount}</Typography>
+                <Typography variant="caption" color="text.secondary">Flagged for Review</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "text.secondary" }}>{notBillable}</Typography>
-              <Typography variant="body2" color="text.secondary">Cancelled / Rejected</Typography>
+            <CardContent sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5, "&:last-child": { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 1.5,
+                  bgcolor: "action.hover",
+                  color: "text.secondary",
+                  flexShrink: 0,
+                }}
+              >
+                <DoNotDisturbAltRoundedIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: "text.secondary" }}>{notBillable}</Typography>
+                <Typography variant="caption" color="text.secondary">Cancelled / Rejected</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-        <ToggleButtonGroup
-          value={filter}
-          exclusive
+      <Stack direction="row" spacing={1.5} sx={{ mb: 2 }}>
+        <TextField
           size="small"
-          onChange={(_, v) => v && setFilter(v)}
-        >
-          <ToggleButton value="all">All</ToggleButton>
-          <ToggleButton value="Completed">Completed</ToggleButton>
-          <ToggleButton value="In Progress">In Progress</ToggleButton>
-          <ToggleButton value="Cancelled">Cancelled</ToggleButton>
-          <ToggleButton value="Rejected">Rejected</ToggleButton>
-          <ToggleButton value="flagged">Flagged</ToggleButton>
-          <ToggleButton value="uninvoiced">Uninvoiced</ToggleButton>
-        </ToggleButtonGroup>
+          placeholder="Search by requisition id, employee, vehicle, driver..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ minWidth: 320 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchRoundedIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel id="requisition-status-filter-label">Status</InputLabel>
+          <Select
+            labelId="requisition-status-filter-label"
+            label="Status"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="Completed">Completed</MenuItem>
+            <MenuItem value="In Progress">In Progress</MenuItem>
+            <MenuItem value="Cancelled">Cancelled</MenuItem>
+            <MenuItem value="Rejected">Rejected</MenuItem>
+            <MenuItem value="flagged">Flagged</MenuItem>
+            <MenuItem value="uninvoiced">Uninvoiced</MenuItem>
+          </Select>
+        </FormControl>
       </Stack>
 
       <Card>
         <DataGrid
           autoHeight
+          getRowHeight={() => "auto"}
           rows={filtered}
           columns={columns}
           loading={loading}
           disableRowSelectionOnClick
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           pageSizeOptions={[10, 25, 50]}
-          sx={{ border: "none" }}
+          sx={{
+            border: "none",
+            "& .MuiDataGrid-cell": { py: 1, alignItems: "center" },
+          }}
         />
       </Card>
 
@@ -516,6 +695,7 @@ export default function RequisitionsPage() {
           View
         </MenuItem>
         <MenuItem
+          disabled={!menuRow || menuRow.tripStatus === "Completed" || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected"}
           onClick={() => {
             if (menuRow) openEdit(menuRow);
             closeMenu();
@@ -525,7 +705,7 @@ export default function RequisitionsPage() {
           Edit
         </MenuItem>
         <MenuItem
-          disabled={!menuRow || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected"}
+          disabled={!menuRow || menuRow.tripStatus !== "In Progress"}
           onClick={() => {
             if (menuRow) openAssign(menuRow);
             closeMenu();
@@ -535,7 +715,17 @@ export default function RequisitionsPage() {
           {menuRow?.vehicleNumber ? "Reassign Vehicle" : "Assign Vehicle"}
         </MenuItem>
         <MenuItem
-          disabled={!menuRow || !menuRow.vehicleNumber || !!menuRow.tripStartTime || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected"}
+          disabled={!menuRow || menuRow.tripStatus !== "In Progress"}
+          onClick={() => {
+            if (menuRow) openAssign(menuRow);
+            closeMenu();
+          }}
+        >
+          <DirectionsCarRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
+          {menuRow?.driverName ? "Reassign Driver" : "Assign Driver"}
+        </MenuItem>
+        <MenuItem
+          disabled={!menuRow || !menuRow.vehicleNumber || !menuRow.driverName || !!menuRow.tripStartTime || menuRow.tripStatus === "Cancelled" || menuRow.tripStatus === "Rejected"}
           onClick={() => {
             if (menuRow) handleTripStart(menuRow);
             closeMenu();
@@ -580,15 +770,12 @@ export default function RequisitionsPage() {
         <MenuItem
           disabled={!menuRow || !findInvoiceForRequisition(menuRow, invoices)}
           onClick={() => {
-            if (menuRow) {
-              const invoice = findInvoiceForRequisition(menuRow, invoices);
-              if (invoice) downloadInvoicePdf(invoice);
-            }
+            if (menuRow) setInvoiceViewRow(menuRow);
             closeMenu();
           }}
         >
           <ReceiptLongRoundedIcon fontSize="small" sx={{ mr: 1.5 }} />
-          Download Invoice
+          View Invoice
         </MenuItem>
         <Divider />
         <MenuItem
@@ -615,7 +802,7 @@ export default function RequisitionsPage() {
 
       <Dialog open={!!assignRow} onClose={() => setAssignRow(null)} maxWidth="xs" fullWidth>
         <DialogTitle>
-          Assign Vehicle
+          Assign Vehicle &amp; Driver
           {assignRow && (
             <Typography variant="body2" color="text.secondary">
               {assignRow.ticketId}
@@ -643,6 +830,29 @@ export default function RequisitionsPage() {
                   </MenuItem>
                 ))}
             </TextField>
+
+            {(() => {
+              const selectedVehicle = vehicles.find((v) => v.id === assignForm.vehicleId);
+              if (!selectedVehicle) return null;
+              return (
+                <Card variant="outlined" sx={{ bgcolor: "action.hover" }}>
+                  <CardContent sx={{ py: 0.75, px: 1.25, "&:last-child": { pb: 0.75 } }}>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                      <DirectionsCarRoundedIcon fontSize="small" color="action" />
+                      <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                        {selectedVehicle.vehicleNumber}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+                      {selectedVehicle.category} • {selectedVehicle.fuelType} • {selectedVehicle.seatCapacity} seats
+                      {" • "}
+                      {selectedVehicle.partner} • ৳{selectedVehicle.perKmRate}/km
+                    </Typography>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             <TextField
               select
               label="Driver"
@@ -665,7 +875,7 @@ export default function RequisitionsPage() {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setAssignRow(null)}>Cancel</Button>
+          <Button color="error" onClick={() => setAssignRow(null)}>Cancel</Button>
           <Button variant="contained" onClick={handleAssignSave} disabled={saving}>
             {saving ? "Saving..." : "Assign"}
           </Button>
@@ -715,83 +925,141 @@ export default function RequisitionsPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      {(() => {
+        const editingRow = editingId ? requisitions.find((r) => r.id === editingId) : null;
+        const assignmentLocked = !!editingRow && (editingRow.tripStatus === "Started" || !!editingRow.tripStartTime);
+        return (
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        slotProps={{ paper: { sx: { minHeight: { md: "82vh" } } } }}
+      >
         <DialogTitle>{editingId ? "Edit Requisition" : "New Requisition"}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 0.5 }}>
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="Employee Name"
-                fullWidth
-                size="small"
-                value={form.employeeName}
-                onChange={(e) => setForm({ ...form, employeeName: e.target.value })}
-              />
-              <TextField
-                label="Department"
-                fullWidth
-                size="small"
-                value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
-              />
-            </Stack>
-            <TextField
-              select
-              label="Vehicle (optional)"
-              helperText="Leave unassigned to assign a vehicle later from the list."
-              fullWidth
-              size="small"
-              value={form.vehicleId}
-              onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
-            >
-              <MenuItem value="">
-                <em>Unassigned</em>
-              </MenuItem>
-              {vehicles
-                .filter((v) => v.status === "Active" || v.id === form.vehicleId)
-                .map((v) => (
-                  <MenuItem key={v.id} value={v.id}>
-                    {v.vehicleNumber} — {v.category}
+        <DialogContent sx={{ pt: 3 }}>
+          <RoutePickerMap
+            key={editingId ?? "new"}
+            initialPickupLabel={route?.pickupLabel}
+            initialDestinationLabel={route?.destinationLabel}
+            initialPickupCoords={route?.pickupCoords}
+            initialDestinationCoords={route?.destinationCoords}
+            onChange={setRoute}
+            mapHeight={440}
+            leftColumnExtra={
+              <Stack spacing={2}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Trip Details
+                </Typography>
+                <TextField
+                  select
+                  label="Vehicle (optional)"
+                  helperText={
+                    assignmentLocked
+                      ? "Trip already started — vehicle can no longer be reassigned."
+                      : "Leave unassigned to assign a vehicle later from the list."
+                  }
+                  disabled={assignmentLocked}
+                  fullWidth
+                  size="small"
+                  value={form.vehicleId}
+                  onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
+                >
+                  <MenuItem value="">
+                    <em>Unassigned</em>
                   </MenuItem>
-                ))}
-            </TextField>
-            <TextField
-              select
-              label="Driver (optional)"
-              fullWidth
-              size="small"
-              value={form.driverId}
-              onChange={(e) => setForm({ ...form, driverId: e.target.value })}
-            >
-              <MenuItem value="">
-                <em>Unassigned</em>
-              </MenuItem>
-              {drivers
-                .filter((d) => d.status === "Active" || d.id === form.driverId)
-                .map((d) => (
-                  <MenuItem key={d.id} value={d.id}>
-                    {d.name} — {d.mobile}
-                  </MenuItem>
-                ))}
-            </TextField>
+                  {vehicles
+                    .filter((v) => v.status === "Active" || v.id === form.vehicleId)
+                    .map((v) => (
+                      <MenuItem key={v.id} value={v.id}>
+                        {v.vehicleNumber} — {v.category}
+                      </MenuItem>
+                    ))}
+                </TextField>
 
-            <RoutePickerMap
-              key={editingId ?? "new"}
-              initialPickupLabel={route?.pickupLabel}
-              initialDestinationLabel={route?.destinationLabel}
-              initialPickupCoords={route?.pickupCoords}
-              initialDestinationCoords={route?.destinationCoords}
-              onChange={setRoute}
-            />
-          </Stack>
+                {(() => {
+                  const selectedVehicle = vehicles.find((v) => v.id === form.vehicleId);
+                  if (!selectedVehicle) return null;
+                  return (
+                    <Card variant="outlined" sx={{ bgcolor: "action.hover" }}>
+                      <CardContent sx={{ py: 0.75, px: 1.25, "&:last-child": { pb: 0.75 } }}>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                          <DirectionsCarRoundedIcon fontSize="small" color="action" />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                            {selectedVehicle.vehicleNumber}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+                          {selectedVehicle.category} • {selectedVehicle.fuelType} • {selectedVehicle.seatCapacity} seats
+                          {" • "}
+                          {selectedVehicle.partner} • ৳{selectedVehicle.perKmRate}/km
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+                <TextField
+                  select
+                  label="Driver (optional)"
+                  helperText={assignmentLocked ? "Trip already started — driver can no longer be reassigned." : undefined}
+                  disabled={assignmentLocked}
+                  fullWidth
+                  size="small"
+                  value={form.driverId}
+                  onChange={(e) => setForm({ ...form, driverId: e.target.value })}
+                >
+                  <MenuItem value="">
+                    <em>Unassigned</em>
+                  </MenuItem>
+                  {drivers
+                    .filter((d) => d.status === "Active" || d.id === form.driverId)
+                    .map((d) => (
+                      <MenuItem key={d.id} value={d.id}>
+                        {d.name} — {d.mobile}
+                      </MenuItem>
+                    ))}
+                </TextField>
+
+                <Divider />
+
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Employee Name"
+                    fullWidth
+                    size="small"
+                    value={form.employeeName}
+                    onChange={(e) => setForm({ ...form, employeeName: e.target.value })}
+                  />
+                  <TextField
+                    label="Department"
+                    fullWidth
+                    size="small"
+                    value={form.department}
+                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                  />
+                </Stack>
+
+                <TextField
+                  label="Vendor (optional)"
+                  fullWidth
+                  size="small"
+                  value={form.vendor}
+                  onChange={(e) => setForm({ ...form, vendor: e.target.value })}
+                />
+              </Stack>
+            }
+          />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button color="error" onClick={() => setOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : editingId ? "Update Requisition" : "Create Requisition"}
           </Button>
         </DialogActions>
       </Dialog>
+        );
+      })()}
 
       <Dialog open={!!viewRow} onClose={() => setViewRow(null)} maxWidth="lg" fullWidth>
         <DialogTitle>
@@ -807,42 +1075,78 @@ export default function RequisitionsPage() {
             <Grid container spacing={3} sx={{ mt: 0.5 }}>
               <Grid size={{ xs: 12, md: 5 }}>
                 <Stack spacing={2}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Typography variant="subtitle2">Trip Status</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1.5,
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        {viewRow.ticketId}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Added {new Date(viewRow.requestDateTime).toLocaleString()}
+                      </Typography>
+                    </Box>
                     <StatusChip status={viewRow.tripStatus} />
                   </Box>
 
-                  <Divider />
-
                   <Stack spacing={1}>
+                    <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+                      Requisition
+                    </Typography>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Employee</Typography>
-                      <Typography variant="body2">{viewRow.employeeName}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{viewRow.employeeName}</Typography>
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Department</Typography>
                       <Typography variant="body2">{viewRow.department}</Typography>
                     </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography variant="body2" color="text.secondary">Vendor</Typography>
+                      <Typography variant="body2">{viewRow.vendor || "—"}</Typography>
+                    </Box>
                   </Stack>
 
                   <Divider />
 
                   <Stack spacing={1}>
+                    <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+                      Assignment
+                    </Typography>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Vehicle</Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {viewRow.vehicleNumber ? `${viewRow.vehicleNumber} — ${viewRow.vehicleCategory}` : "Unassigned"}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Driver</Typography>
-                      <Typography variant="body2">{viewRow.driverName || "Unassigned"}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {viewRow.driverName
+                          ? `${viewRow.driverName}${
+                              drivers.find((d) => d.name === viewRow.driverName)?.mobile
+                                ? ` (${drivers.find((d) => d.name === viewRow.driverName)?.mobile})`
+                                : ""
+                            }`
+                          : "Unassigned"}
+                      </Typography>
                     </Box>
                   </Stack>
 
                   <Divider />
 
                   <Stack spacing={1}>
+                    <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+                      Trip Timeline
+                    </Typography>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                       <Typography variant="body2" color="text.secondary">Trip Start</Typography>
                       <Typography variant="body2">
@@ -853,6 +1157,20 @@ export default function RequisitionsPage() {
                       <Typography variant="body2" color="text.secondary">Trip End</Typography>
                       <Typography variant="body2">
                         {viewRow.tripEndTime ? new Date(viewRow.tripEndTime).toLocaleString() : "—"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Typography variant="body2" color="text.secondary">Distance</Typography>
+                      <Typography variant="body2">
+                        {viewRow.totalDistanceKm ? `${viewRow.totalDistanceKm} km` : "—"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Typography variant="body2" color="text.secondary">Travel Time</Typography>
+                      <Typography variant="body2">
+                        {viewRow.totalTravelTimeMinutes
+                          ? `${Math.floor(viewRow.totalTravelTimeMinutes / 60)}h ${viewRow.totalTravelTimeMinutes % 60}m`
+                          : "—"}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -875,7 +1193,9 @@ export default function RequisitionsPage() {
                     <>
                       <Divider />
                       <Stack spacing={1}>
-                        <Typography variant="body2" color="text.secondary">Time Extension</Typography>
+                        <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+                          Time Extension
+                        </Typography>
                         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                           {viewRow.timeExtensions.map((ext, idx) => (
                             <Tooltip
@@ -905,7 +1225,9 @@ export default function RequisitionsPage() {
                     <>
                       <Divider />
                       <Stack spacing={1}>
-                        <Typography variant="body2" color="text.secondary">Flags</Typography>
+                        <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+                          Flags
+                        </Typography>
                         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                           {flagLabels(viewRow.flags).map((label) => (
                             <Chip key={label} size="small" color="error" icon={<WarningAmberRoundedIcon />} label={label} />
@@ -933,10 +1255,16 @@ export default function RequisitionsPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setViewRow(null)}>Close</Button>
+          <Button color="error" onClick={() => setViewRow(null)}>Close</Button>
           <Box sx={{ flex: 1 }} />
           <Button
             startIcon={<EditRoundedIcon />}
+            disabled={
+              !viewRow ||
+              viewRow.tripStatus === "Completed" ||
+              viewRow.tripStatus === "Cancelled" ||
+              viewRow.tripStatus === "Rejected"
+            }
             onClick={() => {
               if (viewRow) openEdit(viewRow);
               setViewRow(null);
@@ -947,19 +1275,22 @@ export default function RequisitionsPage() {
           {viewRow && findInvoiceForRequisition(viewRow, invoices) && (
             <Button
               startIcon={<ReceiptLongRoundedIcon />}
-              onClick={() => {
-                const invoice = findInvoiceForRequisition(viewRow, invoices);
-                if (invoice) downloadInvoicePdf(invoice);
-              }}
+              onClick={() => setInvoiceViewRow(viewRow)}
             >
-              Download Invoice
+              View Invoice
             </Button>
           )}
           <Button
             variant="contained"
             color="success"
             startIcon={<PlayArrowRoundedIcon />}
-            disabled={!viewRow || actionLoadingId === viewRow.id || !!viewRow.tripStartTime || !viewRow.vehicleNumber}
+            disabled={
+              !viewRow ||
+              actionLoadingId === viewRow.id ||
+              !!viewRow.tripStartTime ||
+              !viewRow.vehicleNumber ||
+              !viewRow.driverName
+            }
             onClick={() => viewRow && handleTripStart(viewRow)}
           >
             Start Trip
@@ -980,6 +1311,216 @@ export default function RequisitionsPage() {
             End Trip
           </Button>
         </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!invoiceViewRow} onClose={() => setInvoiceViewRow(null)} maxWidth="sm" fullWidth>
+        {(() => {
+          const invoice = invoiceViewRow ? findInvoiceForRequisition(invoiceViewRow, invoices) : undefined;
+          if (!invoiceViewRow || !invoice) return null;
+
+          const distanceKm = invoiceViewRow.totalDistanceKm ?? 0;
+          const kmRate = invoice.charges.kmRate;
+          const distanceCharge = calculateDistanceCharge(distanceKm, kmRate);
+          const tripInvoiceNumber = `${invoice.invoiceNumber}-${invoiceViewRow.ticketId}`;
+          const invoiceDriver = drivers.find((d) => d.name === invoiceViewRow.driverName);
+
+          return (
+            <>
+              <DialogTitle>
+                Trip Invoice
+                <Typography variant="body2" color="text.secondary">
+                  {invoiceViewRow.ticketId}
+                </Typography>
+              </DialogTitle>
+              <DialogContent>
+                <Stack spacing={2.5} sx={{ mt: 0.5 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        Fleet Management
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Trip requisition invoice
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        {tripInvoiceNumber}
+                      </Typography>
+                      <StatusChip status={invoice.status} />
+                    </Box>
+                  </Box>
+
+                  <Divider />
+
+                  <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                        Bill To
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {invoiceViewRow.employeeName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {invoiceViewRow.department}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                        Trip Date
+                      </Typography>
+                      <Typography variant="body2">
+                        {new Date(invoiceViewRow.requestDateTime).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Stack spacing={0.75}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Vendor
+                      </Typography>
+                      <Typography variant="body2" sx={{ textAlign: "right" }}>
+                        {invoiceViewRow.vendor || "—"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Driver
+                      </Typography>
+                      <Typography variant="body2" sx={{ textAlign: "right" }}>
+                        {invoiceViewRow.driverName
+                          ? `${invoiceViewRow.driverName}${invoiceDriver?.mobile ? ` (${invoiceDriver.mobile})` : ""}`
+                          : "Unassigned"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Pickup
+                      </Typography>
+                      <Typography variant="body2" sx={{ textAlign: "right", maxWidth: "65%" }}>
+                        {invoiceViewRow.pickupLocation || "—"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Destination
+                      </Typography>
+                      <Typography variant="body2" sx={{ textAlign: "right", maxWidth: "65%" }}>
+                        {invoiceViewRow.destination || "—"}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      bgcolor: "secondary.main",
+                      color: "secondary.contrastText",
+                      borderRadius: 1.5,
+                      px: 2,
+                      py: 1.25,
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        Vehicle
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {invoiceViewRow.vehicleNumber} — {invoiceViewRow.vehicleCategory}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        Total Due (BDT)
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                        {formatBDT(distanceCharge)}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ pl: 0, fontWeight: 700 }}>Description</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          Distance
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          Rate / km
+                        </TableCell>
+                        <TableCell align="right" sx={{ pr: 0, fontWeight: 700 }}>
+                          Amount
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ pl: 0, border: 0 }}>Distance Charge</TableCell>
+                        <TableCell align="right" sx={{ border: 0 }}>
+                          {distanceKm} km
+                        </TableCell>
+                        <TableCell align="right" sx={{ border: 0 }}>
+                          {formatBDT(kmRate)}
+                        </TableCell>
+                        <TableCell align="right" sx={{ pr: 0, border: 0 }}>
+                          {formatBDT(distanceCharge)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+
+                  <Divider />
+
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Total (BDT)
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "primary.main" }}>
+                      {formatBDT(distanceCharge)}
+                    </Typography>
+                  </Box>
+
+                  <Typography variant="caption" color="text.secondary">
+                    Part of monthly invoice {invoice.invoiceNumber} for {invoice.vehicleNumber} ({invoice.billingMonth}) ·
+                    Partner: {invoice.partner}
+                  </Typography>
+                </Stack>
+              </DialogContent>
+              <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={() => setInvoiceViewRow(null)}>Close</Button>
+                <Button
+                  variant="contained"
+                  startIcon={<DownloadRoundedIcon />}
+                  onClick={() =>
+                    downloadTripInvoicePdf({
+                      invoiceNumber: tripInvoiceNumber,
+                      ticketId: invoiceViewRow.ticketId,
+                      employeeName: invoiceViewRow.employeeName,
+                      department: invoiceViewRow.department,
+                      vendor: invoiceViewRow.vendor,
+                      tripDate: invoiceViewRow.requestDateTime,
+                      vehicleNumber: invoiceViewRow.vehicleNumber ?? "—",
+                      vehicleCategory: invoiceViewRow.vehicleCategory ?? "—",
+                      driverName: invoiceViewRow.driverName,
+                      driverMobile: invoiceDriver?.mobile,
+                      pickupLocation: invoiceViewRow.pickupLocation,
+                      destination: invoiceViewRow.destination,
+                      distanceKm,
+                      kmRate,
+                      distanceCharge,
+                    })
+                  }
+                >
+                  Download PDF
+                </Button>
+              </DialogActions>
+            </>
+          );
+        })()}
       </Dialog>
 
       <Snackbar open={!!toast} autoHideDuration={3000} onClose={() => setToast(null)}>

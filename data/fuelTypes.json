@@ -1,0 +1,26 @@
+[
+  {
+    "id": "FT-001",
+    "name": "CNG"
+  },
+  {
+    "id": "FT-002",
+    "name": "LPG"
+  },
+  {
+    "id": "FT-003",
+    "name": "Octane"
+  },
+  {
+    "id": "FT-004",
+    "name": "Diesel"
+  },
+  {
+    "id": "FT-005",
+    "name": "Hybrid"
+  },
+  {
+    "name": "Test",
+    "id": "FT-006"
+  }
+]
