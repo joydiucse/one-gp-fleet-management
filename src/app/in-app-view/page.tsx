@@ -11,6 +11,7 @@ import Grid from "@mui/material/Grid";
 import AltRouteRoundedIcon from "@mui/icons-material/AltRouteRounded";
 import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
 import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
+import PlayCircleRoundedIcon from "@mui/icons-material/PlayCircleRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import { useAuth } from "@/store/AuthContext";
 import type { Requisition, Vehicle } from "@/types";
@@ -49,37 +50,49 @@ export default function MobileHomePage() {
   const scoped = isDriver ? requisitions.filter((r) => r.driverName === user?.name) : requisitions;
 
   const inProgress = scoped.filter((r) => r.tripStatus === "In Progress").length;
+  const started = scoped.filter((r) => r.tripStatus === "Started").length;
   const completedToday = scoped.filter((r) => r.tripStatus === "Completed").length;
 
   const stats = [
+    {
+      label: isDriver ? "My Trips" : "Total Requisitions",
+      value: loading ? "—" : scoped.length,
+      icon: <AltRouteRoundedIcon />,
+      color: "primary.main",
+      href: "/in-app-view/requisitions?status=all",
+    },
     {
       label: "Trips In Progress",
       value: loading ? "—" : inProgress,
       icon: <PendingActionsRoundedIcon />,
       color: "warning.main",
-      href: "/in-app-view/requisitions",
+      href: "/in-app-view/requisitions?status=In Progress",
+    },
+    {
+      label: "Started Trips",
+      value: loading ? "—" : started,
+      icon: <PlayCircleRoundedIcon />,
+      color: "info.main",
+      href: "/in-app-view/requisitions?status=Started",
     },
     {
       label: "Completed Trips",
       value: loading ? "—" : completedToday,
       icon: <CheckCircleRoundedIcon />,
       color: "success.main",
-      href: "/in-app-view/requisitions",
+      href: "/in-app-view/requisitions?status=Completed",
     },
-    {
-      label: isDriver ? "My Trips" : "Total Requisitions",
-      value: loading ? "—" : scoped.length,
-      icon: <AltRouteRoundedIcon />,
-      color: "primary.main",
-      href: "/in-app-view/requisitions",
-    },
-    {
-      label: "Vehicles",
-      value: loading ? "—" : vehicles.length,
-      icon: <LocalShippingRoundedIcon />,
-      color: "secondary.main",
-      href: "/in-app-view/vehicles",
-    },
+    ...(isDriver
+      ? []
+      : [
+          {
+            label: "Vehicles",
+            value: loading ? "—" : vehicles.length,
+            icon: <LocalShippingRoundedIcon />,
+            color: "secondary.main",
+            href: "/in-app-view/vehicles",
+          },
+        ]),
   ];
 
   return (

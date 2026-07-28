@@ -1,0 +1,69 @@
+[
+  {
+    "id": "ROLE-001",
+    "name": "Fleet Administrator",
+    "description": "Full access to all modules including user and role administration.",
+    "permissions": [
+      "dashboard",
+      "vehicles",
+      "drivers",
+      "vehicle-categories",
+      "fuel-types",
+      "requisitions",
+      "billing",
+      "reports",
+      "audit-log",
+      "users",
+      "roles",
+      "integration"
+    ],
+    "status": "Active"
+  },
+  {
+    "id": "ROLE-002",
+    "name": "Billing Administrator",
+    "description": "Manages billing, invoices, and related reports.",
+    "permissions": [
+      "dashboard",
+      "requisitions",
+      "billing",
+      "reports",
+      "audit-log"
+    ],
+    "status": "Active"
+  },
+  {
+    "id": "ROLE-003",
+    "name": "Finance",
+    "description": "Reviews billing and cost reports.",
+    "permissions": [
+      "dashboard",
+      "billing",
+      "reports"
+    ],
+    "status": "Active"
+  },
+  {
+    "id": "ROLE-004",
+    "name": "Approver",
+    "description": "Approves trip requisitions.",
+    "permissions": [
+      "dashboard",
+      "requisitions"
+    ],
+    "status": "Active"
+  },
+  {
+    "id": "ROLE-005",
+    "name": "Read Only",
+    "description": "View-only access to core fleet data.",
+    "permissions": [
+      "dashboard",
+      "vehicles",
+      "drivers",
+      "requisitions",
+      "reports"
+    ],
+    "status": "Active"
+  }
+]

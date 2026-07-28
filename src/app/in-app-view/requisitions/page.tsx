@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
@@ -37,12 +38,24 @@ const STATUS_FILTERS: Array<{ label: string; value: TripStatus | "all" }> = [
 ];
 
 export default function MobileRequisitionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <MobileRequisitionsView />
+    </Suspense>
+  );
+}
+
+function MobileRequisitionsView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [requisitions, setRequisitions] = React.useState<Requisition[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<TripStatus | "all">("all");
+  const initialStatus = searchParams.get("status");
+  const [statusFilter, setStatusFilter] = React.useState<TripStatus | "all">(
+    STATUS_FILTERS.some((f) => f.value === initialStatus) ? (initialStatus as TripStatus | "all") : "all"
+  );
 
   React.useEffect(() => {
     let cancelled = false;

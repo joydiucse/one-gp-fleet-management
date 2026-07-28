@@ -10,6 +10,12 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    user: { id: payload.sub, name: payload.name, email: payload.email, role: payload.role },
+    user: {
+      id: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      role: payload.role,
+      permissions: payload.permissions ?? [],
+    },
   });
 }

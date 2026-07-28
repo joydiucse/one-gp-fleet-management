@@ -16,96 +16,105 @@ import Tooltip from "@mui/material/Tooltip";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import Chip from "@mui/material/Chip";
+import Typography from "@mui/material/Typography";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import Divider from "@mui/material/Divider";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import PageHeader from "@/components/common/PageHeader";
 import StatusChip from "@/components/common/StatusChip";
-import { AppUser, Role } from "@/types";
+import { Role } from "@/types";
 import { useCollection } from "@/lib/useCollection";
+import { PERMISSION_MODULES } from "@/lib/permissions";
 
-const ROLE_PALETTE = ["#0f9bd7", "#2e7d32", "#ed6c02", "#6a1b9a", "#5b6b85", "#c62828", "#00796b"];
-
-function roleColorFor(role: string, roles: Role[]): string {
-  const idx = roles.findIndex((r) => r.name === role);
-  return ROLE_PALETTE[(idx < 0 ? role.length : idx) % ROLE_PALETTE.length];
-}
-
-const emptyUser: Omit<AppUser, "id" | "lastLogin"> & { password: string } = {
+const emptyRole: Omit<Role, "id"> = {
   name: "",
-  email: "",
-  role: "",
+  description: "",
+  permissions: [],
   status: "Active",
-  password: "",
 };
 
-export default function UsersPage() {
-  const { data: rows, loading, create, update, remove } = useCollection<AppUser>("/api/users");
-  const { data: roles } = useCollection<Role>("/api/roles");
+const UNGROUPED = "General";
+
+function groupModules() {
+  const groups = new Map<string, typeof PERMISSION_MODULES>();
+  for (const mod of PERMISSION_MODULES) {
+    const key = mod.group ?? UNGROUPED;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(mod);
+  }
+  return groups;
+}
+
+export default function RolesPage() {
+  const { data: rows, loading, create, update, remove } = useCollection<Role>("/api/roles");
   const [open, setOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState<AppUser | null>(null);
-  const [form, setForm] = React.useState<Omit<AppUser, "id" | "lastLogin"> & { password: string }>(emptyUser);
+  const [editing, setEditing] = React.useState<Role | null>(null);
+  const [form, setForm] = React.useState<Omit<Role, "id">>(emptyRole);
   const [toast, setToast] = React.useState<string | null>(null);
 
   const openAdd = () => {
     setEditing(null);
-    setForm(emptyUser);
+    setForm(emptyRole);
     setOpen(true);
   };
 
-  const openEdit = (u: AppUser) => {
-    setEditing(u);
-    setForm({ name: u.name, email: u.email, role: u.role, status: u.status, password: "" });
+  const openEdit = (r: Role) => {
+    setEditing(r);
+    setForm({ name: r.name, description: r.description ?? "", permissions: r.permissions, status: r.status });
     setOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     try {
       await remove(id);
-      setToast("User removed.");
+      setToast("Role removed.");
     } catch {
-      setToast("Failed to remove user.");
+      setToast("Failed to remove role.");
     }
   };
 
+  const togglePermission = (key: string) => {
+    setForm((f) => ({
+      ...f,
+      permissions: f.permissions.includes(key)
+        ? f.permissions.filter((p) => p !== key)
+        : [...f.permissions, key],
+    }));
+  };
+
   const handleSave = async () => {
-    if (!form.name.trim() || !form.email.trim()) {
-      setToast("Name and email are required.");
-      return;
-    }
-    if (!form.role) {
-      setToast("A role is required.");
-      return;
-    }
-    if (!editing && !form.password.trim()) {
-      setToast("A password is required for new users.");
+    if (!form.name.trim()) {
+      setToast("Role name is required.");
       return;
     }
     try {
       if (editing) {
         await update(editing.id, form);
-        setToast("User updated.");
+        setToast("Role updated.");
       } else {
         await create(form);
-        setToast("User added.");
+        setToast("Role added.");
       }
       setOpen(false);
     } catch {
-      setToast("Failed to save user.");
+      setToast("Failed to save role.");
     }
   };
 
-  const columns: GridColDef<AppUser>[] = [
-    { field: "name", headerName: "Name", flex: 1, minWidth: 170 },
-    { field: "email", headerName: "Email", flex: 1.3, minWidth: 220 },
+  const columns: GridColDef<Role>[] = [
+    { field: "name", headerName: "Role Name", flex: 1, minWidth: 190 },
+    { field: "description", headerName: "Description", flex: 1.4, minWidth: 240 },
     {
-      field: "role",
-      headerName: "Role",
+      field: "permissions",
+      headerName: "Permissions",
       flex: 1,
-      minWidth: 180,
+      minWidth: 140,
       renderCell: (params) => (
-        <Chip size="small" label={params.value} sx={{ bgcolor: roleColorFor(params.value, roles), color: "#fff" }} />
+        <Chip size="small" label={`${params.value.length} of ${PERMISSION_MODULES.length}`} />
       ),
     },
     {
@@ -114,7 +123,6 @@ export default function UsersPage() {
       width: 110,
       renderCell: (params) => <StatusChip status={params.value} />,
     },
-    { field: "lastLogin", headerName: "Last Login", flex: 1, minWidth: 170, valueFormatter: (v: string) => (v === "—" ? v : new Date(v).toLocaleString()) },
     {
       field: "actions",
       headerName: "Actions",
@@ -138,15 +146,17 @@ export default function UsersPage() {
     },
   ];
 
+  const groups = groupModules();
+
   return (
     <Box>
       <PageHeader
-        title="Users"
-        subtitle="Manage application users and assign each one a role. Configure what a role can access on the Roles page."
-        breadcrumbs={[{ label: "Administration" }, { label: "Users" }]}
+        title="Roles"
+        subtitle="Define roles and the menus/pages each role is permitted to access."
+        breadcrumbs={[{ label: "Administration" }, { label: "Roles" }]}
         action={
           <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openAdd}>
-            Add User
+            Add Role
           </Button>
         }
       />
@@ -164,13 +174,13 @@ export default function UsersPage() {
         />
       </Card>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>{editing ? "Edit User" : "Add User"}</DialogTitle>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editing ? "Edit Role" : "Add Role"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid size={12}>
               <TextField
-                label="Full Name"
+                label="Role Name"
                 fullWidth
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -178,35 +188,11 @@ export default function UsersPage() {
             </Grid>
             <Grid size={12}>
               <TextField
-                label="Email"
+                label="Description"
                 fullWidth
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
-            </Grid>
-            <Grid size={12}>
-              <TextField
-                label={editing ? "New Password (leave blank to keep current)" : "Password"}
-                type="password"
-                fullWidth
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-            </Grid>
-            <Grid size={12}>
-              <TextField
-                select
-                label="Role"
-                fullWidth
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                {roles.map((r) => (
-                  <MenuItem key={r.id} value={r.name}>
-                    {r.name}
-                  </MenuItem>
-                ))}
-              </TextField>
             </Grid>
             <Grid size={12}>
               <TextField
@@ -214,7 +200,7 @@ export default function UsersPage() {
                 label="Status"
                 fullWidth
                 value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value as AppUser["status"] })}
+                onChange={(e) => setForm({ ...form, status: e.target.value as Role["status"] })}
               >
                 {["Active", "Inactive"].map((s) => (
                   <MenuItem key={s} value={s}>
@@ -222,6 +208,35 @@ export default function UsersPage() {
                   </MenuItem>
                 ))}
               </TextField>
+            </Grid>
+            <Grid size={12}>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Menu & Page Permissions
+              </Typography>
+              {Array.from(groups.entries()).map(([group, modules]) => (
+                <Box key={group} sx={{ mb: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                    {group}
+                  </Typography>
+                  <Grid container>
+                    {modules.map((mod) => (
+                      <Grid size={6} key={mod.key}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={form.permissions.includes(mod.key)}
+                              onChange={() => togglePermission(mod.key)}
+                            />
+                          }
+                          label={mod.label}
+                        />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              ))}
             </Grid>
           </Grid>
         </DialogContent>

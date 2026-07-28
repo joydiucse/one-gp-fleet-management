@@ -57,7 +57,12 @@ export default function MobileShell({ children }: { children: React.ReactNode })
         boxShadow: { xs: "none", sm: "0 0 40px rgba(27,42,74,0.12)" },
       }}
     >
-      <AppBar position="static" color="primary" elevation={0} sx={{ flexShrink: 0 }}>
+      <AppBar
+        position="static"
+        color="primary"
+        elevation={0}
+        sx={{ flexShrink: 0, pt: "max(env(safe-area-inset-top), 24px)" }}
+      >
         <Toolbar variant="dense" sx={{ minHeight: 52 }}>
           {isSubPage && (
             <IconButton
@@ -91,7 +96,11 @@ export default function MobileShell({ children }: { children: React.ReactNode })
         {children}
       </Box>
 
-      <Paper elevation={8} sx={{ flexShrink: 0, zIndex: 10 }} square>
+      <Paper
+        elevation={8}
+        sx={{ flexShrink: 0, zIndex: 10, pb: "env(safe-area-inset-bottom)" }}
+        square
+      >
         <BottomNavigation
           showLabels
           value={activeTab}

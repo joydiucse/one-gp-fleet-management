@@ -98,6 +98,8 @@ export interface Requisition {
   vehicleCategory?: VehicleCategory;
   driverName?: string;
   vendor?: string;
+  approxTripStartTime: string | null;
+  approxTripEndTime: string | null;
   tripStartTime: string | null;
   tripEndTime: string | null;
   totalTravelTimeMinutes: number | null;
@@ -141,18 +143,19 @@ export interface Invoice {
   adjustmentNote?: string;
 }
 
-export type UserRole =
-  | "Fleet Administrator"
-  | "Billing Administrator"
-  | "Finance"
-  | "Approver"
-  | "Read Only";
+export interface Role {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: string[];
+  status: "Active" | "Inactive";
+}
 
 export interface AppUser {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: string;
   status: "Active" | "Inactive";
   lastLogin: string;
 }

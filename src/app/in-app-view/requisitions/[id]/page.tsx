@@ -18,8 +18,9 @@ import StopRoundedIcon from "@mui/icons-material/StopRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import { useAuth } from "@/store/AuthContext";
-import { downloadTripInvoicePdf, viewTripInvoicePdf } from "@/lib/invoicePdf";
+import { downloadTripInvoicePdf } from "@/lib/invoicePdf";
 import { calculateDistanceCharge } from "@/lib/billing";
+import TripInvoiceDialog from "@/components/requisitions/TripInvoiceDialog";
 import type { Driver, Invoice, Requisition, TripStatus } from "@/types";
 
 const RoutePreviewMap = dynamic(() => import("@/components/requisitions/RoutePreviewMap"), {
@@ -55,6 +56,7 @@ export default function MobileRequisitionDetailPage() {
   const [loading, setLoading] = React.useState(true);
   const [actionLoading, setActionLoading] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
+  const [invoiceModalOpen, setInvoiceModalOpen] = React.useState(false);
 
   const load = React.useCallback(async () => {
     const [reqRes, invRes, driverRes] = await Promise.all([
@@ -197,6 +199,14 @@ export default function MobileRequisitionDetailPage() {
 
           <Stack spacing={1}>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography variant="body2" color="text.secondary">Employee</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>{requisition.employeeName || "—"}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography variant="body2" color="text.secondary">Department</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>{requisition.department || "—"}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography variant="body2" color="text.secondary">Vehicle</Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>{requisition.vehicleNumber ?? "Unassigned"}</Typography>
             </Box>
@@ -215,6 +225,18 @@ export default function MobileRequisitionDetailPage() {
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography variant="body2" color="text.secondary">Vendor</Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>{requisition.vendor ?? "—"}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography variant="body2" color="text.secondary">Approx. Start</Typography>
+              <Typography variant="body2">
+                {requisition.approxTripStartTime ? new Date(requisition.approxTripStartTime).toLocaleString() : "—"}
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography variant="body2" color="text.secondary">Approx. End</Typography>
+              <Typography variant="body2">
+                {requisition.approxTripEndTime ? new Date(requisition.approxTripEndTime).toLocaleString() : "—"}
+              </Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography variant="body2" color="text.secondary">Trip Start</Typography>
@@ -267,10 +289,7 @@ export default function MobileRequisitionDetailPage() {
           size="large"
           startIcon={<VisibilityRoundedIcon />}
           disabled={!invoice}
-          onClick={() => {
-            const details = buildInvoiceDetails();
-            if (details) viewTripInvoicePdf(details);
-          }}
+          onClick={() => setInvoiceModalOpen(true)}
         >
           View Invoice
         </Button>
@@ -293,6 +312,14 @@ export default function MobileRequisitionDetailPage() {
         autoHideDuration={3000}
         onClose={() => setToast(null)}
         message={toast}
+      />
+
+      <TripInvoiceDialog
+        open={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        requisition={requisition}
+        invoice={invoice}
+        driver={drivers.find((d) => d.name === requisition.driverName)}
       />
     </Box>
   );

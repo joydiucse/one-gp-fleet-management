@@ -18,7 +18,6 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import RadioButtonCheckedRoundedIcon from "@mui/icons-material/RadioButtonCheckedRounded";
 import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import StraightenRoundedIcon from "@mui/icons-material/StraightenRounded";
-import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import { GeoPoint } from "@/types";
 import { searchAddress, fetchRoute, haversineKm, reverseGeocode, GeoSearchResult } from "@/lib/geo";
@@ -437,22 +436,12 @@ export default function RoutePickerMap({
               <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
                 {routing && <CircularProgress size={16} />}
                 {route && !routing && (
-                  <>
-                    <Chip
-                      size="small"
-                      icon={<StraightenRoundedIcon />}
-                      label={`${route.distanceKm} km`}
-                      variant="outlined"
-                    />
-                    {route.durationMinutes > 0 && (
-                      <Chip
-                        size="small"
-                        icon={<ScheduleRoundedIcon />}
-                        label={`${Math.floor(route.durationMinutes / 60)}h ${route.durationMinutes % 60}m`}
-                        variant="outlined"
-                      />
-                    )}
-                  </>
+                  <Chip
+                    size="small"
+                    icon={<StraightenRoundedIcon />}
+                    label={`Distance: ${route.distanceKm} km`}
+                    variant="outlined"
+                  />
                 )}
                 {!route && !routing && (
                   <Typography variant="caption" color="text.secondary">

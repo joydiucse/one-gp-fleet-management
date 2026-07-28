@@ -46,7 +46,6 @@ export default function LoginPage() {
     setSubmitting(false);
     if (result.ok) {
       router.push("/");
-      router.refresh();
     } else {
       setError(result.message ?? "Login failed.");
     }

@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -16,9 +15,31 @@ import IconButton from "@mui/material/IconButton";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import GpsFixedRoundedIcon from "@mui/icons-material/GpsFixedRounded";
+import KeyRoundedIcon from "@mui/icons-material/KeyRounded";
+import Chip from "@mui/material/Chip";
+import Tooltip from "@mui/material/Tooltip";
 import { useAuth } from "@/store/AuthContext";
 
 type LoginMode = "staff" | "driver";
+
+const STAFF_DEMO_CREDENTIALS = [
+  { role: "Fleet Administrator", email: "rezaul.karim@grameenphone.com", password: "Fleet@123" },
+  { role: "Billing Administrator", email: "farhana.chowdhury@grameenphone.com", password: "Billing@123" },
+  { role: "Finance", email: "nafisa.rahman@grameenphone.com", password: "Finance@123" },
+  { role: "Approver", email: "shahriar.kabir@grameenphone.com", password: "Approve@123" },
+  { role: "Read Only", email: "tasnia.ferdous@grameenphone.com", password: "ReadOnly@123" },
+];
+
+const DRIVER_DEMO_CREDENTIALS = [
+  { role: "Md. Abdul Karim", mobile: "01711-223344" },
+  { role: "Md. Shahidul Islam", mobile: "01812-334455" },
+  { role: "Md. Rafiqul Alam", mobile: "01913-445566" },
+  { role: "Md. Jahangir Alam", mobile: "01515-667788" },
+  { role: "Md. Mizanur Rahman", mobile: "01716-778899" },
+  { role: "Md. Shamsul Haque", mobile: "01817-889900" },
+  { role: "Md. Delwar Hossain", mobile: "01619-001122" },
+  { role: "Md. Fazlul Karim", mobile: "01720-112233" },
+];
 
 const fieldSx = {
   "& .MuiOutlinedInput-root": { bgcolor: "rgba(255,255,255,0.06)" },
@@ -27,18 +48,9 @@ const fieldSx = {
 const labelSlot = { inputLabel: { sx: { color: "rgba(255,255,255,0.6)" } } };
 
 export default function MobileLoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <MobileLoginForm />
-    </Suspense>
-  );
-}
-
-function MobileLoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login, loginAsDriver } = useAuth();
-  const [mode, setMode] = React.useState<LoginMode>("staff");
+  const [mode, setMode] = React.useState<LoginMode>("driver");
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -52,9 +64,7 @@ function MobileLoginForm() {
   const [submitting, setSubmitting] = React.useState(false);
 
   const goToDestination = () => {
-    const from = searchParams.get("from");
-    router.push(from && from.startsWith("/in-app-view") ? from : "/in-app-view");
-    router.refresh();
+    router.push("/in-app-view");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -242,6 +252,73 @@ function MobileLoginForm() {
           </Button>
         </Stack>
       </Box>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 3, mb: 1 }}>
+        <KeyRoundedIcon sx={{ fontSize: 14, color: "rgba(255,255,255,0.5)" }} />
+        <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: 0.3, color: "rgba(255,255,255,0.5)" }}>
+          DEMO ACCOUNTS
+        </Typography>
+      </Box>
+
+      {mode === "staff" ? (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+          {STAFF_DEMO_CREDENTIALS.map((cred) => (
+            <Tooltip key={cred.email} title={`${cred.email} · ${cred.password}`} arrow placement="top">
+              <Chip
+                size="small"
+                label={cred.role}
+                onClick={() => {
+                  setEmail(cred.email);
+                  setPassword(cred.password);
+                  setError(null);
+                }}
+                sx={{
+                  fontWeight: 600,
+                  fontSize: 12,
+                  color: "#fff",
+                  bgcolor: "rgba(255,255,255,0.08)",
+                  "&:hover": { bgcolor: "primary.main" },
+                }}
+              />
+            </Tooltip>
+          ))}
+        </Box>
+      ) : (
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.75 }}>
+          {DRIVER_DEMO_CREDENTIALS.map((cred) => (
+            <Box
+              key={cred.mobile}
+              onClick={() => {
+                setMobile(cred.mobile);
+                setDriverPassword(cred.mobile);
+                setError(null);
+              }}
+              sx={{
+                cursor: "pointer",
+                borderRadius: 1.5,
+                px: 1.25,
+                py: 0.75,
+                bgcolor: "rgba(255,255,255,0.08)",
+                "&:hover": { bgcolor: "primary.main" },
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{ display: "block", fontWeight: 600, color: "#fff", lineHeight: 1.4 }}
+                noWrap
+              >
+                {cred.role}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ display: "block", color: "rgba(255,255,255,0.65)", lineHeight: 1.4 }}
+              >
+                {cred.mobile}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

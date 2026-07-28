@@ -27,6 +27,7 @@ import GpsFixedRoundedIcon from "@mui/icons-material/GpsFixedRounded";
 import IconButton from "@mui/material/IconButton";
 import { navItems } from "./navConfig";
 import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "@/theme/theme";
+import { useAuth } from "@/store/AuthContext";
 
 const iconMap: Record<string, React.ReactElement> = {
   dashboard: <DashboardRoundedIcon fontSize="small" />,
@@ -50,6 +51,7 @@ export default function Sidebar({
   onMobileClose: () => void;
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({
     "Master Data": true,
   });
@@ -58,6 +60,18 @@ export default function Sidebar({
     setOpenGroups((s) => ({ ...s, [label]: !s[label] }));
 
   const isActive = (href?: string) => !!href && (href === "/" ? pathname === "/" : pathname.startsWith(href));
+
+  const canAccess = (permissionKey?: string) => !permissionKey || !!user?.permissions?.includes(permissionKey);
+
+  const visibleNavItems = navItems
+    .map((item) => {
+      if (item.children) {
+        const children = item.children.filter((c) => canAccess(c.permissionKey));
+        return children.length ? { ...item, children } : null;
+      }
+      return canAccess(item.permissionKey) ? item : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
   const content = (
     <Box
@@ -98,7 +112,7 @@ export default function Sidebar({
       </Box>
 
       <List sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 0.5 }}>
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           if (item.children) {
             const open = openGroups[item.label] && !collapsed;
             const groupActive = item.children.some((c) => isActive(c.href));

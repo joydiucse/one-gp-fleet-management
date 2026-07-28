@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, SESSION_COOKIE } from "@/lib/session";
+import { permissionKeyForPath } from "@/lib/permissions";
 
 // Behind a reverse proxy, req.url reflects the internal address Next.js is
 // bound to (e.g. http://103.204.82.112:3000), not the public host/protocol
@@ -68,6 +69,15 @@ export async function proxy(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     return NextResponse.redirect(new URL("/in-app-view", origin));
+  }
+
+  // Office users only get the pages their role has been granted. Pages with
+  // no mapped permission key (e.g. /login, /in-app-view/*) aren't gated here.
+  if (!isDriver && !pathname.startsWith("/api/")) {
+    const permissionKey = permissionKeyForPath(pathname);
+    if (permissionKey && !payload.permissions?.includes(permissionKey)) {
+      return NextResponse.redirect(new URL("/", origin));
+    }
   }
 
   return NextResponse.next();

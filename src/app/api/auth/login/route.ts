@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { readUsers, writeUsers, toPublicUser } from "@/server/userStore";
+import { permissionsForRole } from "@/server/roleStore";
 import { appendAuditLog } from "@/server/audit";
 import { signSession, SESSION_COOKIE, SESSION_TTL_MS } from "@/lib/session";
 
@@ -35,11 +36,14 @@ export async function POST(req: NextRequest) {
   users[idx] = { ...user, lastLogin: now };
   await writeUsers(users);
 
+  const permissions = await permissionsForRole(user.role);
+
   const token = await signSession({
     sub: user.id,
     name: user.name,
     email: user.email,
     role: user.role,
+    permissions,
     exp: Date.now() + SESSION_TTL_MS,
   });
 
@@ -57,7 +61,7 @@ export async function POST(req: NextRequest) {
   const isHttps =
     req.headers.get("x-forwarded-proto") === "https" || req.nextUrl.protocol === "https:";
 
-  const res = NextResponse.json({ user: toPublicUser(users[idx]) });
+  const res = NextResponse.json({ user: { ...toPublicUser(users[idx]), permissions } });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

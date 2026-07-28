@@ -10,6 +10,7 @@ export interface SessionPayload {
   name: string;
   email: string;
   role: string;
+  permissions: string[];
   exp: number;
 }
 

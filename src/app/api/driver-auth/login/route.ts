@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     name: driver.name,
     email: driver.mobile,
     role: "Driver",
+    permissions: [],
     exp: Date.now() + SESSION_TTL_MS,
   });
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-forwarded-proto") === "https" || req.nextUrl.protocol === "https:";
 
   const res = NextResponse.json({
-    user: { id: driver.id, name: driver.name, email: driver.mobile, role: "Driver" },
+    user: { id: driver.id, name: driver.name, email: driver.mobile, role: "Driver", permissions: [] },
   });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,

@@ -154,7 +154,3 @@ export function downloadTripInvoicePdf(details: TripInvoiceDetails): void {
   doc.save(`${details.invoiceNumber}.pdf`);
 }
 
-export function viewTripInvoicePdf(details: TripInvoiceDetails): void {
-  const doc = buildTripInvoiceDoc(details);
-  window.open(doc.output("bloburl"), "_blank");
-}

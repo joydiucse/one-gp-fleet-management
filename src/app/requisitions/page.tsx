@@ -40,26 +40,20 @@ import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import BlockRoundedIcon from "@mui/icons-material/BlockRounded";
 import DirectionsCarRoundedIcon from "@mui/icons-material/DirectionsCarRounded";
 import MoreTimeRoundedIcon from "@mui/icons-material/MoreTimeRounded";
+import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import FlagRoundedIcon from "@mui/icons-material/FlagRounded";
 import DoNotDisturbAltRoundedIcon from "@mui/icons-material/DoNotDisturbAltRounded";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import PageHeader from "@/components/common/PageHeader";
 import StatusChip from "@/components/common/StatusChip";
+import TripInvoiceDialog from "@/components/requisitions/TripInvoiceDialog";
 import { Requisition, Vehicle, Driver, Invoice } from "@/types";
 import { useCollection } from "@/lib/useCollection";
 import { useInvoiceStore } from "@/store/InvoiceStore";
 import { useAuth } from "@/store/AuthContext";
-import { downloadTripInvoicePdf } from "@/lib/invoicePdf";
-import { formatBDT, calculateDistanceCharge } from "@/lib/billing";
 import { RoutePickerResult } from "@/components/requisitions/RoutePickerMap";
 
 const RoutePickerMap = dynamic(() => import("@/components/requisitions/RoutePickerMap"), {
@@ -86,7 +80,16 @@ const emptyForm = {
   vehicleId: "",
   driverId: "",
   vendor: "",
+  approxTripStartTime: "",
+  approxTripEndTime: "",
 };
+
+function approxDurationLabel(start: string, end: string): string | null {
+  if (!start || !end) return null;
+  const minutes = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
+  if (!Number.isFinite(minutes) || minutes <= 0) return null;
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+}
 
 function flagLabels(flags: Requisition["flags"]): string[] {
   const map: Record<keyof Requisition["flags"], string> = {
@@ -170,7 +173,7 @@ export default function RequisitionsPage() {
   const openExtend = (row: Requisition) => {
     setExtendRow(row);
     setExtendNote("");
-    const base = row.tripEndTime ?? new Date().toISOString();
+    const base = row.tripEndTime ?? row.approxTripEndTime ?? new Date().toISOString();
     setExtendEndTime(base.slice(0, 16));
   };
 
@@ -225,6 +228,8 @@ export default function RequisitionsPage() {
       vehicleId: matchedVehicle?.id ?? "",
       driverId: matchedDriver?.id ?? "",
       vendor: row.vendor ?? "",
+      approxTripStartTime: row.approxTripStartTime ? row.approxTripStartTime.slice(0, 16) : "",
+      approxTripEndTime: row.approxTripEndTime ? row.approxTripEndTime.slice(0, 16) : "",
     });
     setRoute({
       pickupLabel: row.pickupLocation,
@@ -249,6 +254,14 @@ export default function RequisitionsPage() {
       setToast("Select a pickup and destination on the map.");
       return;
     }
+    if (!form.approxTripStartTime || !form.approxTripEndTime) {
+      setToast("Approximate trip start and end time are required.");
+      return;
+    }
+    if (new Date(form.approxTripEndTime).getTime() <= new Date(form.approxTripStartTime).getTime()) {
+      setToast("Approximate trip end time must be after the start time.");
+      return;
+    }
     setSaving(true);
     try {
       const routeFields = {
@@ -263,8 +276,12 @@ export default function RequisitionsPage() {
         vehicleCategory: selectedVehicle?.category,
         driverName: selectedDriver?.name,
         vendor: form.vendor || undefined,
-        totalTravelTimeMinutes: route.durationMinutes ?? null,
+        totalTravelTimeMinutes: Math.round(
+          (new Date(form.approxTripEndTime).getTime() - new Date(form.approxTripStartTime).getTime()) / 60000
+        ),
         totalDistanceKm: route.distanceKm ?? null,
+        approxTripStartTime: new Date(form.approxTripStartTime).toISOString(),
+        approxTripEndTime: new Date(form.approxTripEndTime).toISOString(),
       };
       if (editingId) {
         await update(editingId, routeFields);
@@ -475,8 +492,23 @@ export default function RequisitionsPage() {
       ),
     },
     {
+      field: "approxTripStartTime",
+      headerName: "Approx. Start / End",
+      width: 170,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="caption" component="div" color="text.secondary">
+            Start: {params.value ? new Date(params.value).toLocaleString() : "—"}
+          </Typography>
+          <Typography variant="caption" component="div" color="text.secondary">
+            End: {params.row.approxTripEndTime ? new Date(params.row.approxTripEndTime).toLocaleString() : "—"}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
       field: "tripStartTime",
-      headerName: "Start / End",
+      headerName: "Actual Start / End",
       width: 170,
       renderCell: (params) => (
         <Box>
@@ -1047,6 +1079,45 @@ export default function RequisitionsPage() {
                   value={form.vendor}
                   onChange={(e) => setForm({ ...form, vendor: e.target.value })}
                 />
+
+                <Divider />
+
+                <Typography variant="subtitle2" color="text.secondary">
+                  Approximate Trip Time
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Approx. Start Time"
+                    type="datetime-local"
+                    fullWidth
+                    size="small"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    value={form.approxTripStartTime}
+                    onChange={(e) => setForm({ ...form, approxTripStartTime: e.target.value })}
+                  />
+                  <TextField
+                    label="Approx. End Time"
+                    type="datetime-local"
+                    fullWidth
+                    size="small"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    value={form.approxTripEndTime}
+                    onChange={(e) => setForm({ ...form, approxTripEndTime: e.target.value })}
+                  />
+                </Stack>
+                {(() => {
+                  const duration = approxDurationLabel(form.approxTripStartTime, form.approxTripEndTime);
+                  if (!duration) return null;
+                  return (
+                    <Chip
+                      size="small"
+                      icon={<ScheduleRoundedIcon />}
+                      label={`Approx. Duration: ${duration}`}
+                      variant="outlined"
+                      sx={{ alignSelf: "flex-start" }}
+                    />
+                  );
+                })()}
               </Stack>
             }
           />
@@ -1137,6 +1208,26 @@ export default function RequisitionsPage() {
                                 : ""
                             }`
                           : "Unassigned"}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Divider />
+
+                  <Stack spacing={1}>
+                    <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
+                      Approximate Trip Time
+                    </Typography>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography variant="body2" color="text.secondary">Approx. Start</Typography>
+                      <Typography variant="body2">
+                        {viewRow.approxTripStartTime ? new Date(viewRow.approxTripStartTime).toLocaleString() : "—"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography variant="body2" color="text.secondary">Approx. End</Typography>
+                      <Typography variant="body2">
+                        {viewRow.approxTripEndTime ? new Date(viewRow.approxTripEndTime).toLocaleString() : "—"}
                       </Typography>
                     </Box>
                   </Stack>
@@ -1313,215 +1404,13 @@ export default function RequisitionsPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!invoiceViewRow} onClose={() => setInvoiceViewRow(null)} maxWidth="sm" fullWidth>
-        {(() => {
-          const invoice = invoiceViewRow ? findInvoiceForRequisition(invoiceViewRow, invoices) : undefined;
-          if (!invoiceViewRow || !invoice) return null;
-
-          const distanceKm = invoiceViewRow.totalDistanceKm ?? 0;
-          const kmRate = invoice.charges.kmRate;
-          const distanceCharge = calculateDistanceCharge(distanceKm, kmRate);
-          const tripInvoiceNumber = `${invoice.invoiceNumber}-${invoiceViewRow.ticketId}`;
-          const invoiceDriver = drivers.find((d) => d.name === invoiceViewRow.driverName);
-
-          return (
-            <>
-              <DialogTitle>
-                Trip Invoice
-                <Typography variant="body2" color="text.secondary">
-                  {invoiceViewRow.ticketId}
-                </Typography>
-              </DialogTitle>
-              <DialogContent>
-                <Stack spacing={2.5} sx={{ mt: 0.5 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        Fleet Management
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Trip requisition invoice
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: "right" }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        {tripInvoiceNumber}
-                      </Typography>
-                      <StatusChip status={invoice.status} />
-                    </Box>
-                  </Box>
-
-                  <Divider />
-
-                  <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                        Bill To
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {invoiceViewRow.employeeName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {invoiceViewRow.department}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: "right" }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                        Trip Date
-                      </Typography>
-                      <Typography variant="body2">
-                        {new Date(invoiceViewRow.requestDateTime).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Stack spacing={0.75}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Vendor
-                      </Typography>
-                      <Typography variant="body2" sx={{ textAlign: "right" }}>
-                        {invoiceViewRow.vendor || "—"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Driver
-                      </Typography>
-                      <Typography variant="body2" sx={{ textAlign: "right" }}>
-                        {invoiceViewRow.driverName
-                          ? `${invoiceViewRow.driverName}${invoiceDriver?.mobile ? ` (${invoiceDriver.mobile})` : ""}`
-                          : "Unassigned"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Pickup
-                      </Typography>
-                      <Typography variant="body2" sx={{ textAlign: "right", maxWidth: "65%" }}>
-                        {invoiceViewRow.pickupLocation || "—"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Destination
-                      </Typography>
-                      <Typography variant="body2" sx={{ textAlign: "right", maxWidth: "65%" }}>
-                        {invoiceViewRow.destination || "—"}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      bgcolor: "secondary.main",
-                      color: "secondary.contrastText",
-                      borderRadius: 1.5,
-                      px: 2,
-                      py: 1.25,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                        Vehicle
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {invoiceViewRow.vehicleNumber} — {invoiceViewRow.vehicleCategory}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: "right" }}>
-                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                        Total Due (BDT)
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        {formatBDT(distanceCharge)}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ pl: 0, fontWeight: 700 }}>Description</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>
-                          Distance
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>
-                          Rate / km
-                        </TableCell>
-                        <TableCell align="right" sx={{ pr: 0, fontWeight: 700 }}>
-                          Amount
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell sx={{ pl: 0, border: 0 }}>Distance Charge</TableCell>
-                        <TableCell align="right" sx={{ border: 0 }}>
-                          {distanceKm} km
-                        </TableCell>
-                        <TableCell align="right" sx={{ border: 0 }}>
-                          {formatBDT(kmRate)}
-                        </TableCell>
-                        <TableCell align="right" sx={{ pr: 0, border: 0 }}>
-                          {formatBDT(distanceCharge)}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-
-                  <Divider />
-
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      Total (BDT)
-                    </Typography>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "primary.main" }}>
-                      {formatBDT(distanceCharge)}
-                    </Typography>
-                  </Box>
-
-                  <Typography variant="caption" color="text.secondary">
-                    Part of monthly invoice {invoice.invoiceNumber} for {invoice.vehicleNumber} ({invoice.billingMonth}) ·
-                    Partner: {invoice.partner}
-                  </Typography>
-                </Stack>
-              </DialogContent>
-              <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={() => setInvoiceViewRow(null)}>Close</Button>
-                <Button
-                  variant="contained"
-                  startIcon={<DownloadRoundedIcon />}
-                  onClick={() =>
-                    downloadTripInvoicePdf({
-                      invoiceNumber: tripInvoiceNumber,
-                      ticketId: invoiceViewRow.ticketId,
-                      employeeName: invoiceViewRow.employeeName,
-                      department: invoiceViewRow.department,
-                      vendor: invoiceViewRow.vendor,
-                      tripDate: invoiceViewRow.requestDateTime,
-                      vehicleNumber: invoiceViewRow.vehicleNumber ?? "—",
-                      vehicleCategory: invoiceViewRow.vehicleCategory ?? "—",
-                      driverName: invoiceViewRow.driverName,
-                      driverMobile: invoiceDriver?.mobile,
-                      pickupLocation: invoiceViewRow.pickupLocation,
-                      destination: invoiceViewRow.destination,
-                      distanceKm,
-                      kmRate,
-                      distanceCharge,
-                    })
-                  }
-                >
-                  Download PDF
-                </Button>
-              </DialogActions>
-            </>
-          );
-        })()}
-      </Dialog>
+      <TripInvoiceDialog
+        open={!!invoiceViewRow}
+        onClose={() => setInvoiceViewRow(null)}
+        requisition={invoiceViewRow}
+        invoice={invoiceViewRow ? findInvoiceForRequisition(invoiceViewRow, invoices) : undefined}
+        driver={drivers.find((d) => d.name === invoiceViewRow?.driverName)}
+      />
 
       <Snackbar open={!!toast} autoHideDuration={3000} onClose={() => setToast(null)}>
         <Alert severity="success" onClose={() => setToast(null)}>

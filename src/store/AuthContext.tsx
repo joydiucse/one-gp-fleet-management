@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { UserRole } from "@/types";
 
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: UserRole | "Driver";
+  role: string;
+  permissions: string[];
 }
 
 interface AuthContextValue {
