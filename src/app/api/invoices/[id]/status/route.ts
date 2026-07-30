@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCollection, writeCollection } from "@/server/store";
 import { appendAuditLog } from "@/server/audit";
-import { Invoice, InvoiceStatus } from "@/types";
+import { errorResponse } from "@/server/errors";
+import { invoiceRepository } from "@/server/repositories/invoices";
+import { InvoiceStatus } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -14,32 +15,24 @@ const AUDIT_ACTION: Record<InvoiceStatus, string> = {
 };
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const { id } = await ctx.params;
-  const body = (await req.json()) as { status: InvoiceStatus; actor: string; note?: string };
-  const invoices = await readCollection<Invoice>("invoices");
-  const idx = invoices.findIndex((i) => i.id === id);
-  if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    const { id } = await ctx.params;
+    const body = (await req.json()) as { status: InvoiceStatus; actor: string; note?: string };
 
-  const invoice = invoices[idx];
-  const now = new Date().toISOString();
-  const isTerminalAction = ["Approved", "Paid", "Rejected"].includes(body.status);
+    const updated = await invoiceRepository.setStatus(id, body.status, body.actor, body.note);
+    if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const updated: Invoice = {
-    ...invoice,
-    status: body.status,
-    approvedBy: isTerminalAction ? body.actor : invoice.approvedBy,
-    approvedDate: isTerminalAction ? now : invoice.approvedDate,
-    adjustmentNote: body.note ?? invoice.adjustmentNote,
-  };
-  invoices[idx] = updated;
-  await writeCollection("invoices", invoices);
+    await appendAuditLog({
+      user: body.actor,
+      action: AUDIT_ACTION[body.status] ?? "Bill Status Change",
+      module: "Billing",
+      details: `Invoice ${updated.invoiceNumber} status changed to '${body.status}'.${
+        body.note ? ` Note: ${body.note}` : ""
+      }`,
+    });
 
-  await appendAuditLog({
-    user: body.actor,
-    action: AUDIT_ACTION[body.status] ?? "Bill Status Change",
-    module: "Billing",
-    details: `Invoice ${invoice.invoiceNumber} status changed to '${body.status}'.${body.note ? ` Note: ${body.note}` : ""}`,
-  });
-
-  return NextResponse.json(updated);
+    return NextResponse.json(updated);
+  } catch (error) {
+    return errorResponse(error, "Failed to update invoice status.");
+  }
 }

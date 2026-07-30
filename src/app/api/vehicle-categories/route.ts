@@ -5,7 +5,6 @@ export const runtime = "nodejs";
 
 const routes = collectionRoutes<VehicleCategoryItem>({
   collection: "vehicleCategories",
-  idPrefix: "VC",
   auditModule: "Vehicle Category",
   labelField: "name",
 });

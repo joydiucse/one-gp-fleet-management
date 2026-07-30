@@ -5,7 +5,6 @@ export const runtime = "nodejs";
 
 const routes = collectionRoutes<RateCard>({
   collection: "rateCards",
-  idPrefix: "RC",
   auditModule: "Rate Card",
   labelField: "category",
 });

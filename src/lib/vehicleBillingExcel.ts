@@ -94,10 +94,19 @@ function rowValues(row: VehicleBillingRow, sl: number): (string | number)[] {
   ];
 }
 
-export async function exportVehicleBillingExcel(
+/** File name used for both the download header and the browser save dialog. */
+export function vehicleBillingFileName(monthLabel: string): string {
+  return `Vehicle-Billing-Report-${monthLabel.replace(/\s+/g, "-")}.xlsx`;
+}
+
+/**
+ * Builds the multi-row-header billing workbook. Kept free of DOM APIs so the
+ * report API route can stream it straight to the client.
+ */
+export async function buildVehicleBillingWorkbook(
   rows: VehicleBillingRow[],
   monthLabel: string
-): Promise<void> {
+): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Vehicle Billing");
 
@@ -161,16 +170,5 @@ export async function exportVehicleBillingExcel(
 
   sheet.views = [{ state: "frozen", ySplit: SUB_HEADER_ROW }];
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Vehicle-Billing-Report-${monthLabel.replace(/\s+/g, "-")}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  return workbook;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { readUsers, writeUsers, toPublicUser } from "@/server/userStore";
+import { findUserByEmail, toPublicUser } from "@/server/userStore";
+import { userRepository } from "@/server/repositories/users";
 import { permissionsForRole } from "@/server/roleStore";
 import { appendAuditLog } from "@/server/audit";
 import { signSession, SESSION_COOKIE, SESSION_TTL_MS } from "@/lib/session";
@@ -14,14 +15,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
   }
 
-  const users = await readUsers();
-  const idx = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
+  const user = await findUserByEmail(email);
 
-  if (idx === -1) {
+  if (!user) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   }
-
-  const user = users[idx];
 
   if (user.status !== "Active") {
     return NextResponse.json({ error: "This account is inactive. Contact your Fleet Administrator." }, { status: 403 });
@@ -33,8 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date().toISOString();
-  users[idx] = { ...user, lastLogin: now };
-  await writeUsers(users);
+  await userRepository.touchLastLogin(user.id, now);
 
   const permissions = await permissionsForRole(user.role);
 
@@ -61,7 +58,9 @@ export async function POST(req: NextRequest) {
   const isHttps =
     req.headers.get("x-forwarded-proto") === "https" || req.nextUrl.protocol === "https:";
 
-  const res = NextResponse.json({ user: { ...toPublicUser(users[idx]), permissions } });
+  const res = NextResponse.json({
+    user: { ...toPublicUser({ ...user, lastLogin: now }), permissions },
+  });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

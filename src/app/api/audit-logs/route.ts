@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
-import { readCollection } from "@/server/store";
-import { AuditLog } from "@/types";
+import { readAuditLogs } from "@/server/audit";
+import { errorResponse } from "@/server/errors";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const logs = await readCollection<AuditLog>("auditLogs");
-  return NextResponse.json(logs);
+  try {
+    return NextResponse.json(await readAuditLogs());
+  } catch (error) {
+    return errorResponse(error, "Failed to load audit logs.");
+  }
 }

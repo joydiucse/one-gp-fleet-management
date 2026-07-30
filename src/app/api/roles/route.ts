@@ -5,7 +5,6 @@ export const runtime = "nodejs";
 
 const routes = collectionRoutes<Role>({
   collection: "roles",
-  idPrefix: "ROLE",
   auditModule: "Role",
   labelField: "name",
 });

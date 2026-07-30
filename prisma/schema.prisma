@@ -1,0 +1,514 @@
+// Fleet Management — relational schema.
+//
+// Design notes that are not obvious from the models themselves:
+//
+// * Primary keys are the business IDs the application already issues and puts
+//   in URLs (V-001, R-0001, INV-2026-06-001, ...). Keeping them as the PK means
+//   existing invoice links and bookmarks keep working and the JSON API contract
+//   in src/types/index.ts is unchanged. `seq` holds the numeric part so IDs can
+//   be ordered and the allocator in src/server/ids.ts can be reseeded from data.
+//
+// * Money and rates are DECIMAL, never FLOAT. The repository layer converts to
+//   JS numbers on read so application code keeps working with plain numbers.
+//
+// * Timestamps the UI displays or derives a billing month from are VarChar, not
+//   DateTime, and this is deliberate. The existing records mix naive wall-clock
+//   strings ("2026-06-01T08:15:00") with UTC instants
+//   ("2026-07-30T08:31:53.732Z") in the same field. Coercing both into DATETIME
+//   forces a timezone interpretation on the naive ones, which would shift the
+//   times the UI renders and could move a near-midnight trip into the adjacent
+//   billing month. Storing the exact string keeps every response byte-identical.
+//   `createdAt`/`updatedAt` are real DateTime columns for database-side auditing.
+//
+// * Requisitions and invoices keep denormalised `vehicleNumber` / `driverName`
+//   snapshots alongside their nullable foreign keys. Billing history has to
+//   survive the deletion of a vehicle or driver, and the seed data already
+//   contains trips referencing records that no longer exist.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// The connection URL lives in prisma.config.ts (Prisma 7) for the CLI, and is
+// supplied to the client at runtime by the driver adapter in src/server/db.ts.
+datasource db {
+  provider = "mysql"
+}
+
+// ---------------------------------------------------------------- enums
+
+enum VehicleStatus {
+  Active
+  Inactive
+  Maintenance
+}
+
+enum RentType {
+  Monthly
+  Daily
+}
+
+enum DriverStatus {
+  Active
+  Inactive
+  Suspended
+}
+
+enum RecordStatus {
+  Active
+  Inactive
+}
+
+// "In Progress" is not a legal identifier, so the DB value is mapped.
+enum TripStatus {
+  IN_PROGRESS @map("In Progress")
+  Started
+  Completed
+  Cancelled
+  Rejected
+}
+
+enum InvoiceStatus {
+  Draft
+  PENDING_APPROVAL @map("Pending Approval")
+  Approved
+  Paid
+  Rejected
+}
+
+enum IntegrationDirection {
+  Inbound
+  Outbound
+}
+
+enum IntegrationStatus {
+  Success
+  Failed
+  Retried
+}
+
+// ---------------------------------------------------------------- master data
+
+model VehicleCategory {
+  id   String @id @db.VarChar(32)
+  seq  Int
+  name String @unique(map: "uq_vehicle_category_name") @db.VarChar(120)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  vehicles  Vehicle[]
+  rateCards RateCard[]
+
+  @@map("vehicle_categories")
+}
+
+model FuelType {
+  id   String @id @db.VarChar(32)
+  seq  Int
+  name String @unique(map: "uq_fuel_type_name") @db.VarChar(120)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  vehicles  Vehicle[]
+  rateCards RateCard[]
+
+  @@map("fuel_types")
+}
+
+model Vehicle {
+  id            String @id @db.VarChar(32)
+  seq           Int
+  vehicleNumber String @unique(map: "uq_vehicle_number") @map("vehicle_number") @db.VarChar(64)
+
+  categoryId String @map("category_id") @db.VarChar(32)
+  fuelTypeId String @map("fuel_type_id") @db.VarChar(32)
+
+  seatCapacity Int     @map("seat_capacity")
+  partner      String  @db.VarChar(160)
+  mobileNumber String? @map("mobile_number") @db.VarChar(32)
+
+  // Billing rates.
+  monthlyFixedRent Decimal   @map("monthly_fixed_rent") @db.Decimal(12, 2)
+  perKmRate        Decimal   @map("per_km_rate") @db.Decimal(10, 2)
+  otRate           Decimal   @map("ot_rate") @db.Decimal(10, 2)
+  rentType         RentType? @map("rent_type")
+
+  // Recurring monthly charges billed alongside the fixed rent.
+  personalUsageBill  Decimal @map("personal_usage_bill") @db.Decimal(12, 2)
+  tollCharge         Decimal @map("toll_charge") @db.Decimal(12, 2)
+  parkingCharge      Decimal @map("parking_charge") @db.Decimal(12, 2)
+  startupFuelCharge  Decimal @map("startup_fuel_charge") @db.Decimal(12, 2)
+  mobileBill         Decimal @map("mobile_bill") @db.Decimal(12, 2)
+  otherCharge        Decimal @map("other_charge") @db.Decimal(12, 2)
+
+  status VehicleStatus
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  category VehicleCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "fk_vehicle_category")
+  fuelType FuelType        @relation(fields: [fuelTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "fk_vehicle_fuel_type")
+
+  requisitions Requisition[]
+  invoices     Invoice[]
+
+  @@index([categoryId], map: "ix_vehicle_category")
+  @@index([fuelTypeId], map: "ix_vehicle_fuel_type")
+  @@index([status], map: "ix_vehicle_status")
+  @@index([partner], map: "ix_vehicle_partner")
+  @@map("vehicles")
+}
+
+model Driver {
+  id   String @id @db.VarChar(32)
+  seq  Int
+  name String @db.VarChar(160)
+
+  mobile String @db.VarChar(32)
+  // Digits-only form of `mobile`, so driver sign-in is an indexed lookup
+  // instead of a scan that normalises every row.
+  mobileNormalized String @unique(map: "uq_driver_mobile_normalized") @map("mobile_normalized") @db.VarChar(32)
+
+  licenseNumber     String @map("license_number") @db.VarChar(64)
+  licenseAttachment String @map("license_attachment") @db.VarChar(255)
+  nidNumber         String @map("nid_number") @db.VarChar(64)
+  nidAttachment     String @map("nid_attachment") @db.VarChar(255)
+  vendor            String @db.VarChar(160)
+
+  status DriverStatus
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  requisitions Requisition[]
+
+  @@index([status], map: "ix_driver_status")
+  @@index([vendor], map: "ix_driver_vendor")
+  @@index([name], map: "ix_driver_name")
+  @@map("drivers")
+}
+
+model RateCard {
+  id  String @id @db.VarChar(32)
+  seq Int
+
+  categoryId String @map("category_id") @db.VarChar(32)
+  fuelTypeId String @map("fuel_type_id") @db.VarChar(32)
+
+  monthlyFixedRent Decimal @map("monthly_fixed_rent") @db.Decimal(12, 2)
+  perKmRate        Decimal @map("per_km_rate") @db.Decimal(10, 2)
+  otRatePerHour    Decimal @map("ot_rate_per_hour") @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  category VehicleCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "fk_rate_card_category")
+  fuelType FuelType        @relation(fields: [fuelTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "fk_rate_card_fuel_type")
+
+  // One rate card per Vehicle Category x Fuel Type combination — the rule the
+  // Rate Card page enforces in the UI, now guaranteed by the database.
+  @@unique([categoryId, fuelTypeId], map: "uq_rate_card_category_fuel")
+  @@map("rate_cards")
+}
+
+// ---------------------------------------------------------------- access control
+
+model Role {
+  id          String       @id @db.VarChar(32)
+  seq         Int
+  name        String       @unique(map: "uq_role_name") @db.VarChar(120)
+  description String?      @db.VarChar(500)
+  status      RecordStatus
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  roleId        String @map("role_id") @db.VarChar(32)
+  permissionKey String @map("permission_key") @db.VarChar(64)
+  // Preserves the order the permissions were saved in, so the array in the API
+  // response comes back exactly as it was submitted.
+  seq           Int
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "fk_role_permission_role")
+
+  @@id([roleId, permissionKey])
+  @@index([permissionKey], map: "ix_role_permission_key")
+  @@map("role_permissions")
+}
+
+model User {
+  id     String @id @db.VarChar(32)
+  seq    Int
+  name   String @db.VarChar(160)
+  email  String @unique(map: "uq_user_email") @db.VarChar(190)
+  roleId String @map("role_id") @db.VarChar(32)
+
+  status       RecordStatus
+  passwordHash String       @map("password_hash") @db.VarChar(255)
+  // Null renders as the "—" placeholder the users grid already shows.
+  lastLogin    String?      @map("last_login") @db.VarChar(32)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "fk_user_role")
+
+  @@index([roleId], map: "ix_user_role")
+  @@index([status], map: "ix_user_status")
+  @@map("users")
+}
+
+// ---------------------------------------------------------------- operations
+
+model Requisition {
+  id  String @id @db.VarChar(32)
+  seq Int
+
+  // Not unique: duplicate OneGP ticket IDs are a condition the system detects
+  // and flags (see flagDuplicateTicketId), not one it prevents.
+  ticketId    String @map("ticket_id") @db.VarChar(64)
+  requestorId String @map("requestor_id") @db.VarChar(64)
+
+  employeeName    String @map("employee_name") @db.VarChar(160)
+  department      String @db.VarChar(160)
+  requestDateTime String @map("request_date_time") @db.VarChar(32)
+
+  pickupLocation String @map("pickup_location") @db.VarChar(500)
+  destination    String @db.VarChar(500)
+
+  // 7 decimal places is ~11 mm of ground precision. The source values carry up
+  // to 15 digits, but that tail is floating-point noise from a map click, not
+  // information, and nothing computes a distance from these columns.
+  pickupLat      Decimal? @map("pickup_lat") @db.Decimal(10, 7)
+  pickupLng      Decimal? @map("pickup_lng") @db.Decimal(10, 7)
+  destinationLat Decimal? @map("destination_lat") @db.Decimal(10, 7)
+  destinationLng Decimal? @map("destination_lng") @db.Decimal(10, 7)
+
+  // FK plus snapshot: the trip keeps the vehicle/driver it actually ran with
+  // even after that master record is removed.
+  vehicleId       String? @map("vehicle_id") @db.VarChar(32)
+  vehicleNumber   String? @map("vehicle_number") @db.VarChar(64)
+  vehicleCategory String? @map("vehicle_category") @db.VarChar(120)
+  driverId        String? @map("driver_id") @db.VarChar(32)
+  driverName      String? @map("driver_name") @db.VarChar(160)
+  vendor          String? @db.VarChar(160)
+
+  approxTripStartTime String? @map("approx_trip_start_time") @db.VarChar(32)
+  approxTripEndTime   String? @map("approx_trip_end_time") @db.VarChar(32)
+  tripStartTime       String? @map("trip_start_time") @db.VarChar(32)
+  tripEndTime         String? @map("trip_end_time") @db.VarChar(32)
+
+  totalTravelTimeMinutes Int?     @map("total_travel_time_minutes")
+  totalDistanceKm        Decimal? @map("total_distance_km") @db.Decimal(12, 2)
+
+  tripStatus TripStatus @map("trip_status")
+
+  // Exception flags raised for review before billing.
+  flagMissingStartEndTime  Boolean @default(false) @map("flag_missing_start_end_time")
+  flagMissingDistance      Boolean @default(false) @map("flag_missing_distance")
+  flagVehicleDriverMismatch Boolean @default(false) @map("flag_vehicle_driver_mismatch")
+  flagDuplicateTicketId    Boolean @default(false) @map("flag_duplicate_ticket_id")
+  flagGpsDataMissing       Boolean @default(false) @map("flag_gps_data_missing")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "fk_requisition_vehicle")
+  driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "fk_requisition_driver")
+
+  timeExtensions RequisitionTimeExtension[]
+  routePoints    RequisitionRoutePoint[]
+
+  @@index([ticketId], map: "ix_requisition_ticket")
+  @@index([tripStatus], map: "ix_requisition_status")
+  @@index([vehicleId], map: "ix_requisition_vehicle")
+  @@index([driverId], map: "ix_requisition_driver")
+  @@index([vehicleNumber], map: "ix_requisition_vehicle_number")
+  @@index([department], map: "ix_requisition_department")
+  @@index([requestDateTime], map: "ix_requisition_request_date")
+  @@map("requisitions")
+}
+
+model RequisitionTimeExtension {
+  id            Int    @id @default(autoincrement())
+  requisitionId String @map("requisition_id") @db.VarChar(32)
+  seq           Int
+
+  extendedAt      String  @map("extended_at") @db.VarChar(32)
+  previousEndTime String? @map("previous_end_time") @db.VarChar(32)
+  newEndTime      String  @map("new_end_time") @db.VarChar(32)
+  note            String  @db.VarChar(1000)
+  extendedBy      String  @map("extended_by") @db.VarChar(160)
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "fk_time_extension_requisition")
+
+  @@index([requisitionId, seq], map: "ix_time_extension_requisition")
+  @@map("requisition_time_extensions")
+}
+
+// Replaces the data/trip-route-polylines/*.json sidecar files.
+model RequisitionRoutePoint {
+  id            Int    @id @default(autoincrement())
+  requisitionId String @map("requisition_id") @db.VarChar(32)
+  seq           Int
+
+  lat Decimal @db.Decimal(10, 7)
+  lng Decimal @db.Decimal(10, 7)
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "fk_route_point_requisition")
+
+  @@index([requisitionId, seq], map: "ix_route_point_requisition")
+  @@map("requisition_route_points")
+}
+
+// ---------------------------------------------------------------- billing
+
+model Invoice {
+  id            String @id @db.VarChar(32)
+  seq           Int
+  invoiceNumber String @unique(map: "uq_invoice_number") @map("invoice_number") @db.VarChar(64)
+
+  // FK plus snapshot, for the same history-survives-deletion reason as trips.
+  vehicleId       String? @map("vehicle_id") @db.VarChar(32)
+  vehicleNumber   String  @map("vehicle_number") @db.VarChar(64)
+  vehicleCategory String  @map("vehicle_category") @db.VarChar(120)
+  partner         String  @db.VarChar(160)
+
+  // YYYY-MM. Not unique with vehicle: once a month's invoice leaves Draft, a
+  // later completed trip opens a second invoice for that vehicle and month.
+  billingMonth String @map("billing_month") @db.Char(7)
+  tripCount    Int    @map("trip_count")
+
+  totalBill Decimal       @map("total_bill") @db.Decimal(14, 2)
+  status    InvoiceStatus
+
+  generatedDate  String  @map("generated_date") @db.VarChar(32)
+  approvedBy     String? @map("approved_by") @db.VarChar(200)
+  approvedDate   String? @map("approved_date") @db.VarChar(32)
+  adjustmentNote String? @map("adjustment_note") @db.VarChar(1000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  vehicle Vehicle?       @relation(fields: [vehicleId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "fk_invoice_vehicle")
+  charges InvoiceCharge?
+
+  @@index([billingMonth], map: "ix_invoice_billing_month")
+  @@index([vehicleNumber, billingMonth], map: "ix_invoice_vehicle_month")
+  @@index([status], map: "ix_invoice_status")
+  @@index([vehicleId], map: "ix_invoice_vehicle")
+  @@index([partner], map: "ix_invoice_partner")
+  @@map("invoices")
+}
+
+// One-to-one with Invoice: the nine billed components plus the extra columns
+// the detailed vehicle billing export needs. The extras are nullable because
+// invoices generated before they existed simply have no value for them, which
+// the report code already treats as zero.
+model InvoiceCharge {
+  invoiceId String @id @map("invoice_id") @db.VarChar(32)
+
+  fixedRent         Decimal @map("fixed_rent") @db.Decimal(12, 2)
+  personalUsageBill Decimal @map("personal_usage_bill") @db.Decimal(12, 2)
+  distanceKm        Decimal @map("distance_km") @db.Decimal(12, 2)
+  kmRate            Decimal @map("km_rate") @db.Decimal(10, 2)
+  distanceCharge    Decimal @map("distance_charge") @db.Decimal(12, 2)
+  otHours           Decimal @map("ot_hours") @db.Decimal(10, 2)
+  otCharge          Decimal @map("ot_charge") @db.Decimal(12, 2)
+  tollCharge        Decimal @map("toll_charge") @db.Decimal(12, 2)
+  parkingCharge     Decimal @map("parking_charge") @db.Decimal(12, 2)
+  startupFuelCharge Decimal @map("startup_fuel_charge") @db.Decimal(12, 2)
+  mobileBill        Decimal @map("mobile_bill") @db.Decimal(12, 2)
+  otherCharges      Decimal @map("other_charges") @db.Decimal(12, 2)
+
+  // Vehicle billing report detail.
+  usageFrom String? @map("usage_from") @db.VarChar(32)
+  usageTo   String? @map("usage_to") @db.VarChar(32)
+
+  kmOctane Decimal? @map("km_octane") @db.Decimal(12, 2)
+  kmLPG    Decimal? @map("km_lpg") @db.Decimal(12, 2)
+  kmCNG    Decimal? @map("km_cng") @db.Decimal(12, 2)
+  kmHybrid Decimal? @map("km_hybrid") @db.Decimal(12, 2)
+
+  rateOctane Decimal? @map("rate_octane") @db.Decimal(10, 2)
+  rateLPG    Decimal? @map("rate_lpg") @db.Decimal(10, 2)
+  rateCNG    Decimal? @map("rate_cng") @db.Decimal(10, 2)
+  rateHybrid Decimal? @map("rate_hybrid") @db.Decimal(10, 2)
+
+  driverDaDays   Decimal? @map("driver_da_days") @db.Decimal(10, 2)
+  driverDaAmount Decimal? @map("driver_da_amount") @db.Decimal(12, 2)
+
+  extraServiceRate   Decimal? @map("extra_service_rate") @db.Decimal(10, 2)
+  extraServiceHour   Decimal? @map("extra_service_hour") @db.Decimal(10, 2)
+  extraServiceAmount Decimal? @map("extra_service_amount") @db.Decimal(12, 2)
+
+  adjustmentAbsent Decimal? @map("adjustment_absent") @db.Decimal(12, 2)
+
+  iftarBillRate   Decimal? @map("iftar_bill_rate") @db.Decimal(10, 2)
+  iftarBillDays   Decimal? @map("iftar_bill_days") @db.Decimal(10, 2)
+  iftarBillAmount Decimal? @map("iftar_bill_amount") @db.Decimal(12, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "fk_invoice_charge_invoice")
+
+  @@map("invoice_charges")
+}
+
+// ---------------------------------------------------------------- audit & integration
+
+model AuditLog {
+  id        String @id @db.VarChar(32)
+  seq       Int
+  timestamp String @db.VarChar(32)
+  user      String @db.VarChar(160)
+  action    String @db.VarChar(120)
+  module    String @db.VarChar(120)
+  details   String @db.VarChar(1000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  // The log is read newest-first by timestamp, so that is the sort index.
+  @@index([timestamp], map: "ix_audit_log_timestamp")
+  @@index([module], map: "ix_audit_log_module")
+  @@index([seq], map: "ix_audit_log_seq")
+  @@index([user], map: "ix_audit_log_user")
+  @@map("audit_logs")
+}
+
+model IntegrationLog {
+  id          String               @id @db.VarChar(32)
+  seq         Int
+  timestamp   String               @db.VarChar(32)
+  direction   IntegrationDirection
+  payloadType String               @map("payload_type") @db.VarChar(120)
+  referenceId String               @map("reference_id") @db.VarChar(120)
+  status      IntegrationStatus
+  message     String               @db.VarChar(1000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  @@index([direction], map: "ix_integration_log_direction")
+  @@index([status], map: "ix_integration_log_status")
+  @@index([referenceId], map: "ix_integration_log_reference")
+  @@map("integration_logs")
+}
+
+// ---------------------------------------------------------------- id allocation
+
+// Hands out the next numeric part for each business ID prefix. The application
+// previously derived it by regexing the maximum ID out of the whole collection,
+// which both races under concurrency and reuses IDs after a delete.
+model IdSequence {
+  name      String @id @db.VarChar(64)
+  nextValue Int    @map("next_value")
+
+  @@map("id_sequences")
+}

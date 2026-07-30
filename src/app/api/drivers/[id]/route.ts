@@ -5,7 +5,6 @@ export const runtime = "nodejs";
 
 const routes = itemRoutes<Driver>({
   collection: "drivers",
-  idPrefix: "D",
   auditModule: "Driver Master",
   labelField: "name",
 });

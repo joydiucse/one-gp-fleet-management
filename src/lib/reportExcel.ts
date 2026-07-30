@@ -18,13 +18,21 @@ function autoWidth(header: string, values: unknown[]): number {
   return Math.min(Math.max(Math.max(...lengths, 0) + 2, 12), 42);
 }
 
-export async function exportSimpleReportExcel(
+/** File name used for both the download header and the browser save dialog. */
+export function reportFileName(fileNamePrefix: string, monthLabel: string): string {
+  return `${fileNamePrefix}-${monthLabel.replace(/\s+/g, "-")}.xlsx`;
+}
+
+/**
+ * Builds a single-header-row report workbook. Kept free of DOM APIs so report
+ * API routes can stream it straight to the client.
+ */
+export async function buildSimpleReportWorkbook(
   rows: Record<string, unknown>[],
   columns: ReportExcelColumn[],
   reportTitle: string,
-  monthLabel: string,
-  fileNamePrefix: string
-): Promise<void> {
+  monthLabel: string
+): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(reportTitle.slice(0, 31) || "Report");
 
@@ -60,14 +68,31 @@ export async function exportSimpleReportExcel(
 
   sheet.views = [{ state: "frozen", ySplit: HEADER_ROW }];
 
+  return workbook;
+}
+
+/** Client-side build-and-download, for reports still computed in the browser. */
+export async function exportSimpleReportExcel(
+  rows: Record<string, unknown>[],
+  columns: ReportExcelColumn[],
+  reportTitle: string,
+  monthLabel: string,
+  fileNamePrefix: string
+): Promise<void> {
+  const workbook = await buildSimpleReportWorkbook(rows, columns, reportTitle, monthLabel);
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+  downloadBlob(blob, reportFileName(fileNamePrefix, monthLabel));
+}
+
+/** Saves a blob (built locally or fetched from a report API) to a file. */
+export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${fileNamePrefix}-${monthLabel.replace(/\s+/g, "-")}.xlsx`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();

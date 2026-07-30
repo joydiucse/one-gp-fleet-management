@@ -647,7 +647,9 @@
 
   <h4>Editing and deleting</h4>
   <p>Use the pencil icon to <span class="ui">Edit</span> a row and the bin icon to <span class="ui">Delete</span> it.
-  Deletion is immediate — remove a vehicle only if it has never been billed; otherwise set it to Inactive.</p>
+  Deletion is immediate and there is no confirmation step. Past trips and invoices keep the vehicle number
+  they were billed against, so history is not lost — but the vehicle disappears from the assignment
+  dropdowns and from future reports. Prefer setting a retired vehicle to <span class="chip grey">Inactive</span>.</p>
 
   <!-- ---------- 6.2 Drivers ---------- -->
   <h3 id="drivers">6.2 Driver Master</h3>
@@ -698,9 +700,10 @@
   </figure>
 
   <div class="warnbox">
-    <b>Before you delete</b>
-    <p>Deleting a category or fuel type does not change vehicles already using it, but its rate cards will no
-    longer be reachable from the dropdowns. Retire values only when no active vehicle uses them.</p>
+    <b>Values in use cannot be deleted</b>
+    <p>If a category or fuel type is still referenced by a vehicle or a rate card, the system refuses the
+    deletion and names what is still using it. Reassign or remove those records first. This protects the
+    billing rates attached to the combination from being orphaned.</p>
   </div>
 
   <!-- ---------- 6.4 Rate card ---------- -->
@@ -1276,6 +1279,12 @@
     <li>Select <span class="ui">Save</span>. Users holding the role pick up the change on their next page load.</li>
   </ol>
 
+  <div class="warnbox">
+    <b>Roles in use cannot be deleted</b>
+    <p>A role that is still assigned to at least one user cannot be removed — the system refuses it and tells
+    you to reassign those users first. This prevents a user being left without any permissions.</p>
+  </div>
+
   <div class="note">
     <b>Separation of duties</b>
     <p>Grant <b>Billing &amp; Invoices</b> plus <b>Reports</b> to Finance for approval and payment, and keep
@@ -1589,6 +1598,26 @@
           <td>A rate card cannot be saved.</td>
           <td>That Category + Fuel Type pair already exists.</td>
           <td>Edit the existing card.</td>
+        </tr>
+        <tr>
+          <td>“… is still used by one or more vehicles or rate cards.”</td>
+          <td>You tried to delete a category or fuel type that is still referenced.</td>
+          <td>Reassign the vehicles and remove the rate cards that use it, then delete it.</td>
+        </tr>
+        <tr>
+          <td>“… is still assigned to one or more users.”</td>
+          <td>You tried to delete a role that users still hold.</td>
+          <td>Move those users to another role first.</td>
+        </tr>
+        <tr>
+          <td>“Vehicle number … is already registered.”</td>
+          <td>Another vehicle already uses that registration number.</td>
+          <td>Check the existing record rather than creating a duplicate.</td>
+        </tr>
+        <tr>
+          <td>“Mobile number … is already registered to another driver.”</td>
+          <td>Another driver has the same number, ignoring punctuation.</td>
+          <td>Correct the number; it is also the driver's mobile sign-in identity.</td>
         </tr>
         <tr>
           <td>A requisition from OneGP is missing.</td>

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import { readCollection, writeCollection } from "./store";
 import { AppUser } from "@/types";
+import { userRepository } from "./repositories/users";
 
 export interface StoredUser extends AppUser {
   passwordHash: string;
@@ -20,11 +20,12 @@ export function toPublicUser(user: StoredUser): PublicUser {
 }
 
 export async function readUsers(): Promise<StoredUser[]> {
-  return readCollection<StoredUser>("users");
+  return userRepository.list();
 }
 
-export async function writeUsers(users: StoredUser[]): Promise<void> {
-  await writeCollection("users", users);
+/** Case-insensitive, used by sign-in. */
+export async function findUserByEmail(email: string): Promise<StoredUser | null> {
+  return userRepository.findByEmail(email);
 }
 
 export async function hashPassword(password: string): Promise<string> {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readDrivers, normalizeMobile } from "@/server/driverStore";
+import { findDriverByMobile, normalizeMobile } from "@/server/driverStore";
 import { appendAuditLog } from "@/server/audit";
 import { signSession, SESSION_COOKIE, SESSION_TTL_MS } from "@/lib/session";
 
@@ -12,9 +12,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Mobile number and password are required." }, { status: 400 });
   }
 
-  const drivers = await readDrivers();
-  const normalizedInput = normalizeMobile(mobile);
-  const driver = drivers.find((d) => normalizeMobile(d.mobile) === normalizedInput);
+  const driver = await findDriverByMobile(mobile);
 
   // Drivers don't have a separate password on file yet — the password is
   // their own mobile number until a dedicated credential is introduced.

@@ -1,43 +1,67 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { Prisma } from "@prisma/client";
 import { GeoPoint } from "@/types";
+import { prisma } from "./db";
 
-const POLYLINE_DIR = path.join(process.cwd(), "data", "trip-route-polylines");
+// Route geometry used to live in data/trip-route-polylines/<requisition>.json.
+// It is now a child table keyed by requisition, so a trip and its route are
+// written in one transaction and deleted together.
 
-function fileFor(requisitionId: string): string {
-  return path.join(POLYLINE_DIR, `${requisitionId}.json`);
+function toPoints(rows: { lat: Prisma.Decimal; lng: Prisma.Decimal }[]): GeoPoint[] {
+  return rows.map((row) => ({ lat: Number(row.lat), lng: Number(row.lng) }));
 }
 
 export async function readRoutePolyline(requisitionId: string): Promise<GeoPoint[] | undefined> {
-  try {
-    const raw = await fs.readFile(fileFor(requisitionId), "utf-8");
-    return JSON.parse(raw) as GeoPoint[];
-  } catch {
-    return undefined;
-  }
+  const rows = await prisma.requisitionRoutePoint.findMany({
+    where: { requisitionId },
+    orderBy: { seq: "asc" },
+    select: { lat: true, lng: true },
+  });
+  return rows.length > 0 ? toPoints(rows) : undefined;
 }
 
-export async function readRoutePolylines(requisitionIds: string[]): Promise<Map<string, GeoPoint[]>> {
-  const entries = await Promise.all(
-    requisitionIds.map(async (id) => [id, await readRoutePolyline(id)] as const)
-  );
+/**
+ * Loads the route for many requisitions in one query, so listing trips does not
+ * fan out into one read per trip.
+ */
+export async function readRoutePolylines(
+  requisitionIds: string[]
+): Promise<Map<string, GeoPoint[]>> {
   const map = new Map<string, GeoPoint[]>();
-  for (const [id, polyline] of entries) {
-    if (polyline) map.set(id, polyline);
+  if (requisitionIds.length === 0) return map;
+
+  const rows = await prisma.requisitionRoutePoint.findMany({
+    where: { requisitionId: { in: requisitionIds } },
+    orderBy: [{ requisitionId: "asc" }, { seq: "asc" }],
+    select: { requisitionId: true, lat: true, lng: true },
+  });
+
+  for (const row of rows) {
+    const existing = map.get(row.requisitionId);
+    const point = { lat: Number(row.lat), lng: Number(row.lng) };
+    if (existing) existing.push(point);
+    else map.set(row.requisitionId, [point]);
   }
   return map;
 }
 
-export async function writeRoutePolyline(requisitionId: string, polyline: GeoPoint[] | undefined): Promise<void> {
-  const file = fileFor(requisitionId);
-  if (!polyline || polyline.length === 0) {
-    await fs.rm(file, { force: true });
-    return;
-  }
-  await fs.mkdir(POLYLINE_DIR, { recursive: true });
-  await fs.writeFile(file, JSON.stringify(polyline, null, 2) + "\n", "utf-8");
+export async function writeRoutePolyline(
+  requisitionId: string,
+  polyline: GeoPoint[] | undefined
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.requisitionRoutePoint.deleteMany({ where: { requisitionId } });
+    if (!polyline || polyline.length === 0) return;
+    await tx.requisitionRoutePoint.createMany({
+      data: polyline.map((point, index) => ({
+        requisitionId,
+        seq: index,
+        lat: new Prisma.Decimal(point.lat),
+        lng: new Prisma.Decimal(point.lng),
+      })),
+    });
+  });
 }
 
 export async function deleteRoutePolyline(requisitionId: string): Promise<void> {
-  await fs.rm(fileFor(requisitionId), { force: true });
+  await prisma.requisitionRoutePoint.deleteMany({ where: { requisitionId } });
 }

@@ -18,10 +18,12 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import PageHeader from "@/components/common/PageHeader";
-import { useReportData } from "@/lib/useReportData";
+import { useCollection } from "@/lib/useCollection";
 import { formatBDT } from "@/lib/billing";
-import { buildVehicleBillingRows } from "@/lib/vehicleBillingReport";
-import { exportVehicleBillingExcel } from "@/lib/vehicleBillingExcel";
+import { downloadBlob } from "@/lib/reportExcel";
+import { vehicleBillingFileName } from "@/lib/vehicleBillingExcel";
+import type { VehicleBillingRow } from "@/lib/vehicleBillingReport";
+import type { Vehicle } from "@/types";
 
 const ALL_VALUE = "__all__";
 
@@ -30,8 +32,15 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+/** Selected filters as query params for /api/reports/vehicle-billing. */
+function reportQuery(filters: { vehicleIds: string[]; billingMonth: string }): URLSearchParams {
+  const params = new URLSearchParams({ billingMonth: filters.billingMonth });
+  if (filters.vehicleIds.length > 0) params.set("vehicleIds", filters.vehicleIds.join(","));
+  return params;
+}
+
 export default function VehicleBillingReportPage() {
-  const { invoices, vehicles, loading } = useReportData();
+  const { data: vehicles } = useCollection<Vehicle>("/api/vehicles");
 
   const now = React.useMemo(() => new Date(), []);
   const [month, setMonth] = React.useState(now.getMonth() + 1);
@@ -39,6 +48,8 @@ export default function VehicleBillingReportPage() {
   const [selectedVehicleIds, setSelectedVehicleIds] = React.useState<string[]>([]);
   const [toast, setToast] = React.useState<string | null>(null);
   const [exporting, setExporting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [rows, setRows] = React.useState<VehicleBillingRow[]>([]);
 
   const billingMonth = `${year}-${String(month).padStart(2, "0")}`;
   const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`;
@@ -59,18 +70,9 @@ export default function VehicleBillingReportPage() {
   }, [vehicles]);
 
   const years = React.useMemo(() => {
-    const fromInvoices = invoices.map((i) => Number(i.billingMonth.slice(0, 4))).filter((y) => !Number.isNaN(y));
-    const set = new Set([now.getFullYear(), ...fromInvoices]);
-    return Array.from(set).sort((a, b) => b - a);
-  }, [invoices, now]);
-
-  const rows = React.useMemo(
-    () =>
-      appliedFilters
-        ? buildVehicleBillingRows(invoices, vehicles, appliedFilters.vehicleIds, appliedFilters.billingMonth)
-        : [],
-    [invoices, vehicles, appliedFilters]
-  );
+    const current = now.getFullYear();
+    return Array.from({ length: 6 }, (_, i) => current - i);
+  }, [now]);
 
   const handleVehicleChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value;
@@ -82,18 +84,43 @@ export default function VehicleBillingReportPage() {
     setSelectedVehicleIds(next);
   };
 
-  const handleSearch = () => {
-    setAppliedFilters({ vehicleIds: selectedVehicleIds, billingMonth, monthLabel });
+  const handleSearch = async () => {
+    const filters = { vehicleIds: selectedVehicleIds, billingMonth, monthLabel };
+    setAppliedFilters(filters);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/reports/vehicle-billing?${reportQuery(filters)}`);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Failed to generate the report.");
+      }
+      const data = (await res.json()) as { rows: VehicleBillingRow[] };
+      setRows(data.rows);
+    } catch (error) {
+      setRows([]);
+      setToast(error instanceof Error ? error.message : "Failed to generate the report.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleExport = async () => {
-    if (!appliedFilters || rows.length === 0) {
+    if (!appliedFilters) {
       setToast("Run a search first to load the report before exporting.");
       return;
     }
     setExporting(true);
     try {
-      await exportVehicleBillingExcel(rows, appliedFilters.monthLabel);
+      const params = reportQuery(appliedFilters);
+      params.set("export_type", "excel");
+      const res = await fetch(`/api/reports/vehicle-billing?${params}`);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Failed to export the report.");
+      }
+      downloadBlob(await res.blob(), vehicleBillingFileName(appliedFilters.monthLabel));
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Failed to export the report.");
     } finally {
       setExporting(false);
     }
