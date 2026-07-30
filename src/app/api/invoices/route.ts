@@ -35,6 +35,15 @@ export async function POST(req: NextRequest) {
     startupFuelCharge: 0,
     mobileBill: 0,
     otherCharges: 0,
+    driverDaDays: 0,
+    driverDaAmount: 0,
+    extraServiceRate: 0,
+    extraServiceHour: 0,
+    extraServiceAmount: 0,
+    adjustmentAbsent: 0,
+    iftarBillRate: 0,
+    iftarBillDays: 0,
+    iftarBillAmount: 0,
   };
 
   const created: Invoice = {

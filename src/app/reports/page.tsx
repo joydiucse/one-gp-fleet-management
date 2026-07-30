@@ -82,7 +82,7 @@ export default function ReportsHubPage() {
     <Box>
       <PageHeader
         title="Reports"
-        subtitle="Vehicle, vendor, department, and driver reports generated from billing and trip data. Each report supports Excel/PDF export."
+        subtitle="Vehicle, vendor, department, and driver reports generated from billing and trip data. Filter by month/year and export to Excel."
       />
 
       <Grid container spacing={2}>

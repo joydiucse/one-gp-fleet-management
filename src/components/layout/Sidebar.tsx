@@ -111,7 +111,25 @@ export default function Sidebar({
         </IconButton>
       </Box>
 
-      <List sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 0.5 }}>
+      <List
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          py: 0.5,
+          "&::-webkit-scrollbar": { width: 6 },
+          "&::-webkit-scrollbar-track": { background: "transparent" },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(255,255,255,0.15)",
+            borderRadius: 3,
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(255,255,255,0.25)",
+          },
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255,255,255,0.15) transparent",
+        }}
+      >
         {visibleNavItems.map((item) => {
           if (item.children) {
             const open = openGroups[item.label] && !collapsed;

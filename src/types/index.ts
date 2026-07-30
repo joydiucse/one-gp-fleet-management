@@ -17,6 +17,8 @@ export interface FuelTypeItem {
 
 export type VehicleStatus = "Active" | "Inactive" | "Maintenance";
 
+export type RentType = "Monthly" | "Daily";
+
 export interface Vehicle {
   id: string;
   vehicleNumber: string;
@@ -34,6 +36,8 @@ export interface Vehicle {
   mobileBill: number;
   otherCharge: number;
   status: VehicleStatus;
+  mobileNumber?: string;
+  rentType?: RentType;
 }
 
 export type DriverStatus = "Active" | "Inactive" | "Suspended";
@@ -124,6 +128,27 @@ export interface InvoiceCharges {
   startupFuelCharge: number;
   mobileBill: number;
   otherCharges: number;
+  // Vehicle billing report fields (src/app/reports/vehicle-billing) — optional so
+  // existing invoice records without them still compute (undefined -> 0 at read time).
+  usageFrom?: string;
+  usageTo?: string;
+  kmOctane?: number;
+  kmLPG?: number;
+  kmCNG?: number;
+  kmHybrid?: number;
+  rateOctane?: number;
+  rateLPG?: number;
+  rateCNG?: number;
+  rateHybrid?: number;
+  driverDaDays?: number;
+  driverDaAmount?: number;
+  extraServiceRate?: number;
+  extraServiceHour?: number;
+  extraServiceAmount?: number;
+  adjustmentAbsent?: number;
+  iftarBillRate?: number;
+  iftarBillDays?: number;
+  iftarBillAmount?: number;
 }
 
 export interface Invoice {
