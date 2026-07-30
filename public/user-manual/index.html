@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Fleet Management — Feature List &amp; User Manual</title>
+<style>
+  /* ------------------------------------------------------------------
+     Fleet Management — Feature List & User Manual (single page, public)
+     This is a plain HTML file. Edit the text directly, and replace the
+     screenshots by dropping image files into ./screenshots/ using the
+     exact file names listed in Appendix F at the bottom of this page.
+     ------------------------------------------------------------------ */
+
+  :root {
+    --brand: #0f9bd7;
+    --brand-dark: #0b7ca8;
+    --navy: #1b2a4a;
+    --ink: #1b2a4a;
+    --muted: #5b6b85;
+    --line: #e2e8f0;
+    --bg: #f2f4f7;
+    --paper: #ffffff;
+    --ok: #2e7d32;
+    --warn: #ed6c02;
+    --err: #d32f2f;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Document banner ---------- */
+  .doc-banner {
+    background: radial-gradient(1200px 400px at 20% -10%, #24456f 0%, #16213a 55%, #101828 100%);
+    color: #fff;
+    padding: 44px 28px 40px;
+  }
+  .doc-banner .inner { max-width: 1180px; margin: 0 auto; }
+  .brandline { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .brandmark {
+    width: 38px; height: 38px; border-radius: 9px; background: var(--brand);
+    display: grid; place-items: center; flex: 0 0 auto;
+  }
+  .brandmark svg { width: 22px; height: 22px; fill: #fff; }
+  .brandline b { font-size: 17px; letter-spacing: .2px; }
+  .brandline span { display: block; font-size: 12px; color: #9fb3d1; font-weight: 400; }
+  .doc-banner h1 { margin: 0 0 8px; font-size: 34px; line-height: 1.2; font-weight: 700; }
+  .doc-banner p.lede { margin: 0; color: #c3d2e8; max-width: 780px; font-size: 15px; }
+  .metastrip {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px;
+  }
+  .metastrip span {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 999px; padding: 4px 13px; font-size: 12px; color: #dce6f5;
+  }
+
+  /* ---------- Layout ---------- */
+  .wrap {
+    max-width: 1180px; margin: 0 auto; padding: 28px;
+    display: grid; grid-template-columns: 254px minmax(0, 1fr); gap: 30px; align-items: start;
+  }
+
+  /* ---------- Table of contents ---------- */
+  nav.toc {
+    position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto;
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 14px; font-size: 13.5px;
+  }
+  nav.toc h4 {
+    margin: 0 0 10px; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
+  }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; }
+  nav.toc li { margin: 0; }
+  nav.toc a {
+    display: block; padding: 5px 9px; border-radius: 6px; color: var(--ink);
+    text-decoration: none; border-left: 2px solid transparent;
+  }
+  nav.toc a:hover { background: #f4f8fb; color: var(--brand-dark); }
+  nav.toc a.sub { padding-left: 20px; font-size: 12.8px; color: var(--muted); }
+  nav.toc a.active { background: #eaf6fc; color: var(--brand-dark); border-left-color: var(--brand); font-weight: 600; }
+  nav.toc hr { border: 0; border-top: 1px solid var(--line); margin: 10px 2px; }
+
+  /* ---------- Content ---------- */
+  main { min-width: 0; }
+  section.card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 26px 28px; margin-bottom: 22px;
+  }
+  section.card > :first-child { margin-top: 0; }
+  section.card > :last-child { margin-bottom: 0; }
+
+  h2 {
+    font-size: 22px; font-weight: 700; margin: 0 0 4px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--brand);
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  h2 .num {
+    font-size: 12px; font-weight: 700; color: #fff; background: var(--brand);
+    border-radius: 5px; padding: 2px 8px; letter-spacing: .04em;
+  }
+  h3 { font-size: 17px; font-weight: 700; margin: 30px 0 8px; color: var(--navy); }
+  h4 { font-size: 14.5px; font-weight: 700; margin: 20px 0 6px; color: var(--navy); }
+  p { margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 12px 0 0; }
+
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+  ol.steps > li {
+    counter-increment: s; position: relative; padding-left: 38px; margin-bottom: 12px;
+  }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: 1px;
+    width: 25px; height: 25px; border-radius: 50%; background: #eaf6fc; color: var(--brand-dark);
+    font-size: 12.5px; font-weight: 700; display: grid; place-items: center;
+  }
+
+  code, .ui {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 12.8px; background: #f1f5f9; border: 1px solid #e2e8f0;
+    border-radius: 4px; padding: 1px 5px; white-space: nowrap;
+  }
+  .ui { background: #eef7fc; border-color: #cde8f6; color: var(--brand-dark); font-weight: 600; }
+  .path { color: var(--muted); }
+
+  /* ---------- Tables ---------- */
+  .tablewrap { overflow-x: auto; margin: 0 0 14px; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 520px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f8fafc; font-weight: 700; color: var(--navy); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+
+  /* ---------- Chips / badges ---------- */
+  .chip {
+    display: inline-block; border-radius: 999px; padding: 1px 10px; font-size: 11.5px;
+    font-weight: 700; line-height: 1.7; white-space: nowrap;
+  }
+  .chip.ok { background: #e6f4ea; color: #1e6023; }
+  .chip.warn { background: #fdf0e3; color: #a04d00; }
+  .chip.info { background: #e7f4fb; color: var(--brand-dark); }
+  .chip.err { background: #fceaea; color: #a31d1d; }
+  .chip.grey { background: #eef1f5; color: var(--muted); }
+
+  /* ---------- Callouts ---------- */
+  .note, .tip, .warnbox {
+    border-left: 4px solid var(--brand); background: #f6fbfe; border-radius: 0 8px 8px 0;
+    padding: 12px 16px; margin: 14px 0; font-size: 14px;
+  }
+  .tip { border-left-color: var(--ok); background: #f4faf5; }
+  .warnbox { border-left-color: var(--warn); background: #fffaf3; }
+  .note b, .tip b, .warnbox b { display: block; margin-bottom: 2px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
+  .note b { color: var(--brand-dark); }
+  .tip b { color: var(--ok); }
+  .warnbox b { color: #a04d00; }
+  .note > :last-child, .tip > :last-child, .warnbox > :last-child { margin-bottom: 0; }
+
+  /* ---------- Feature grid ---------- */
+  .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin: 16px 0; }
+  .fcard { border: 1px solid var(--line); border-radius: 9px; padding: 14px 16px; background: #fcfdfe; }
+  .fcard h5 { margin: 0 0 6px; font-size: 14px; color: var(--navy); }
+  .fcard ul { margin: 0; padding-left: 18px; font-size: 13.3px; color: var(--muted); }
+  .fcard li { margin-bottom: 3px; }
+
+  /* ---------- Screenshots ---------- */
+  figure.shot {
+    margin: 18px 0 22px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fbfcfe; padding: 10px; overflow: hidden;
+  }
+  figure.shot img {
+    display: block; width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--line);
+    background: #fff;
+  }
+  figure.shot figcaption {
+    margin-top: 9px; padding: 0 4px; font-size: 12.6px; color: var(--muted);
+  }
+  figure.shot figcaption b { color: var(--brand-dark); font-weight: 700; }
+  /* Placeholder shown until the screenshot file exists */
+  figure.shot.missing img { display: none; }
+  figure.shot.missing .ph {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 190px; border: 2px dashed #cbd6e4; border-radius: 6px; background: #f7f9fc;
+    color: var(--muted); text-align: center; padding: 20px;
+  }
+  figure.shot .ph { display: none; }
+  figure.shot .ph .ico { font-size: 26px; opacity: .5; }
+  figure.shot .ph .fname {
+    font-family: "SFMono-Regular", Consolas, monospace; font-size: 12.5px; color: var(--brand-dark);
+    background: #eef7fc; border: 1px solid #cde8f6; border-radius: 4px; padding: 2px 8px;
+  }
+  figure.shot .ph .hint { font-size: 12px; }
+
+  /* ---------- Misc ---------- */
+  .formula {
+    background: #16213a; color: #dbe7f7; border-radius: 8px; padding: 16px 18px; margin: 14px 0;
+    font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.9;
+    overflow-x: auto;
+  }
+  .formula em { color: #6fd0ff; font-style: normal; }
+  .kv { display: grid; grid-template-columns: 170px minmax(0,1fr); gap: 4px 16px; font-size: 14px; margin: 12px 0; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-weight: 600; }
+  footer.docfoot {
+    max-width: 1180px; margin: 0 auto; padding: 8px 28px 44px; color: var(--muted); font-size: 12.5px;
+    display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between;
+  }
+  a { color: var(--brand-dark); }
+  .toplink {
+    position: fixed; right: 22px; bottom: 22px; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--brand); color: #fff; display: grid; place-items: center; text-decoration: none;
+    box-shadow: 0 3px 12px rgba(16,24,40,.25); font-size: 17px; opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .toplink.show { opacity: 1; pointer-events: auto; }
+
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; padding: 18px; gap: 18px; }
+    nav.toc { position: static; max-height: none; }
+    .doc-banner { padding: 32px 18px; }
+    .doc-banner h1 { font-size: 26px; }
+    section.card { padding: 20px 18px; }
+    footer.docfoot { padding: 8px 18px 36px; }
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    nav.toc, .toplink { display: none !important; }
+    .wrap { display: block; max-width: none; padding: 0; }
+    section.card { border: 0; padding: 0 0 10pt; margin: 0 0 14pt; break-inside: auto; }
+    h2 { break-after: avoid; }
+    h3, h4 { break-after: avoid; }
+    figure.shot, table { break-inside: avoid; }
+    .doc-banner { background: #16213a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================== BANNER ============================== -->
+<header class="doc-banner">
+  <div class="inner">
+    <div class="brandline">
+      <div class="brandmark">
+        <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.94 3a8.994 8.994 0 00-7.94-7.94V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg>
+      </div>
+      <div>
+        <b>Fleet Management</b>
+        <span>Automated Fleet Billing System &middot; integrated with OneGP</span>
+      </div>
+    </div>
+    <h1>Feature List &amp; User Manual</h1>
+    <p class="lede">
+      A complete reference for the Fleet Management System — the automated fleet billing platform that
+      turns approved OneGP vehicle requisitions into accurate, auditable monthly invoices based on trip
+      distance, vehicle category, fuel type, fixed rent, overtime and approved incidental charges.
+    </p>
+    <div class="metastrip">
+      <span>Document version 1.0</span>
+      <span>Applies to: Fleet Management System (web + mobile in-app view)</span>
+      <span>Audience: Fleet, Billing, Finance, Approver &amp; Driver users</span>
+      <span>Public reference page</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============================== TOC ============================== -->
+<nav class="toc" aria-label="Contents">
+  <h4>Contents</h4>
+  <ol>
+    <li><a href="#overview">1. System Overview</a></li>
+    <li><a href="#features">2. Feature List</a></li>
+    <li><a href="#traceability" class="sub">2.1 Requirement coverage</a></li>
+    <li><a href="#roles">3. Roles &amp; Access</a></li>
+    <hr />
+    <li><a href="#login">4. Signing In</a></li>
+    <li><a href="#dashboard">5. Dashboard</a></li>
+    <li><a href="#masterdata">6. Master Data</a></li>
+    <li><a href="#vehicles" class="sub">6.1 Vehicle Master</a></li>
+    <li><a href="#drivers" class="sub">6.2 Driver Master</a></li>
+    <li><a href="#categories" class="sub">6.3 Categories &amp; Fuel Types</a></li>
+    <li><a href="#ratecard" class="sub">6.4 Rate Card</a></li>
+    <li><a href="#requisitions">7. Trip Requisitions</a></li>
+    <li><a href="#billing">8. Billing &amp; Invoices</a></li>
+    <li><a href="#billing-logic" class="sub">8.1 Billing logic</a></li>
+    <li><a href="#invoice-detail" class="sub">8.2 Invoice &amp; approval</a></li>
+    <li><a href="#adjustment" class="sub">8.3 Manual adjustment</a></li>
+    <li><a href="#reports">9. Reports &amp; Export</a></li>
+    <li><a href="#audit">10. Audit Log</a></li>
+    <li><a href="#integration">11. OneGP Integration</a></li>
+    <li><a href="#admin">12. Users &amp; Roles</a></li>
+    <li><a href="#mobile">13. Mobile In-App View</a></li>
+    <hr />
+    <li><a href="#appendix-a">A. Status reference</a></li>
+    <li><a href="#appendix-b">B. Exception flags</a></li>
+    <li><a href="#appendix-c">C. Field reference</a></li>
+    <li><a href="#appendix-d">D. Troubleshooting</a></li>
+    <li><a href="#appendix-e">E. Glossary</a></li>
+    <li><a href="#appendix-f">F. Replacing screenshots</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============================== 1. OVERVIEW ============================== -->
+<section class="card" id="overview">
+  <h2><span class="num">01</span> System Overview</h2>
+
+  <p>
+    The Fleet Management System eliminates manual fleet billing. Employees raise a vehicle requisition
+    in <b>OneGP</b>; once a vehicle is assigned and the trip is completed, the trip data flows into this
+    system, which applies the configured billing rules and consolidates every trip for a vehicle into a
+    single monthly invoice ready for review, approval and payment.
+  </p>
+
+  <h3>End-to-end business process</h3>
+  <ol class="steps">
+    <li><b>Requisition raised in OneGP.</b> An employee submits a vehicle requisition with pickup, destination and required time.</li>
+    <li><b>Vehicle &amp; driver assigned.</b> Assignment is made on the basis of the employee's requirement and current vehicle availability.</li>
+    <li><b>Trip data received.</b> Requisition, assignment, employee and trip details reach the Fleet Management System over a secured REST/JSON API, with no or minimal user intervention.</li>
+    <li><b>Trip executed.</b> Start and end are recorded (in the system or from the driver's mobile in-app view), producing actual travel time and distance.</li>
+    <li><b>Charges calculated.</b> On trip completion the system applies the billing rules for that vehicle's category and fuel type.</li>
+    <li><b>Monthly invoice consolidated.</b> All trips for a vehicle in a billing month roll into one invoice that moves through Draft → Pending Approval → Approved → Paid.</li>
+    <li><b>Status returned to OneGP.</b> Invoice number, billing status, payment status and any error status are posted back to OneGP.</li>
+  </ol>
+
+  <h3>Two interfaces, one system</h3>
+  <div class="fgrid">
+    <div class="fcard">
+      <h5>Web application (desktop)</h5>
+      <ul>
+        <li>Master data, rate cards, requisitions</li>
+        <li>Billing, invoice approval, adjustments</li>
+        <li>All eight reports with Excel export</li>
+        <li>Audit log, integration logs, user &amp; role administration</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <h5>Mobile in-app view</h5>
+      <ul>
+        <li>Drivers: their assigned trips only</li>
+        <li>Start Trip / End Trip from the phone</li>
+        <li>Route map, trip invoice view &amp; PDF download</li>
+        <li>Staff: read-only vehicle list</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 2. FEATURE LIST ============================== -->
+<section class="card" id="features">
+  <h2><span class="num">02</span> Feature List</h2>
+
+  <p>Everything the system does, grouped by module.</p>
+
+  <h3>1. Master data management</h3>
+  <ul>
+    <li><b>Vehicle Master</b> — vehicle number, category, fuel type, seat capacity, partner/vendor, monthly fixed rent, per-KM rate, OT rate per hour, plus recurring charges (personal usage bill, toll, parking, startup fuel, mobile bill, other charge) and status (Active / Inactive / Maintenance).</li>
+    <li><b>Driver Master</b> — driver name, mobile number, driving licence number with attachment reference, NID number with attachment reference, vendor and status (Active / Inactive / Suspended).</li>
+    <li><b>Vehicle Categories</b> — fully managed list (Sedan, SUV, Microbus 7-seater, Microbus 12-seater, Pickup, Minibus, Ambulance, Others, and any category you add).</li>
+    <li><b>Fuel Types</b> — fully managed list (CNG, LPG, Octane, Diesel, Hybrid, and any type you add).</li>
+    <li><b>Rate Card</b> — configurable monthly fixed rent, per-KM rate and OT rate per hour for every <em>Vehicle Category × Fuel Type</em> combination, with duplicate-combination prevention.</li>
+    <li>Create, edit and delete on every master list, with inline validation and duplicate checks.</li>
+  </ul>
+
+  <h3>2. Trip requisition management</h3>
+  <ul>
+    <li>Receives requisition and assignment data from OneGP: ticket ID, requestor ID, employee name, department / cost centre, request date &amp; time, pickup location, destination, vehicle, category, driver, trip start &amp; end, total travel time, total distance and trip status.</li>
+    <li>Manual requisition entry for trips raised outside OneGP, with map-based pickup and destination selection, address autocomplete and automatic route distance/duration.</li>
+    <li>Assign or reassign vehicle and driver, restricted to active records and blocked once a trip has started.</li>
+    <li><b>Start Trip</b> / <b>End Trip</b> with automatic travel-time calculation and invoice generation on completion.</li>
+    <li><b>Extend Time</b> with a mandatory reason, retaining a full extension history (who, when, previous and new end time, note).</li>
+    <li>Cancel or Reject a requisition so that no bill is produced.</li>
+    <li>Search across requisition ID, employee, department, vehicle, driver and vendor; filter by status, flagged or uninvoiced.</li>
+    <li>Route preview map, per-trip invoice preview and per-trip invoice PDF download.</li>
+  </ul>
+
+  <h3>3. Automated billing</h3>
+  <ul>
+    <li>Automatic bill calculation on trip completion using the vehicle's rates and the rate card for its category and fuel type.</li>
+    <li>Monthly consolidation: every completed trip for a vehicle in a billing month becomes one invoice.</li>
+    <li>Nine charge components on every invoice — fixed rent (body rent), personal usage bill, distance charge, overtime, toll, parking, startup fuel, mobile bill and other approved charges.</li>
+    <li>Invoice approval workflow: Draft → Pending Approval → Approved → Paid, with Reject and a rejection note.</li>
+    <li><b>Manual billing adjustment</b> by authorised administrators, with a mandatory reason recorded in the audit log; negative amounts deduct.</li>
+    <li>Exception handling — no bill is generated for cancelled or rejected trips, invalid assignments or missing completion data.</li>
+    <li>Five exception flags surfaced on the requisition list for review: missing start/end time, missing distance, vehicle/driver mismatch, duplicate ticket ID, GPS data missing.</li>
+    <li>Printable invoice and PDF generation.</li>
+  </ul>
+
+  <h3>4. Reporting</h3>
+  <ul>
+    <li>Eight standard reports (see <a href="#reports">section 9</a>): monthly vehicle-wise billing, vendor-wise billing, department-wise utilisation, distance travelled, overtime cost, category-wise cost analysis, fuel-type-wise cost analysis and driver utilisation.</li>
+    <li>Multi-select entity filter (vehicles, vendors, departments, drivers, categories, fuel types) plus month and year.</li>
+    <li>Excel export on every report, formatted with a report title row, bold headers, frozen header row and auto-sized columns.</li>
+    <li>Detailed 40-column vehicle billing export covering fuel-wise KM distribution, KM rates including tax, startup fuel, driver DA, toll/parking, extra service charge, mobile bill, adjustments, Iftar bill, VAT at 15% and grand total.</li>
+    <li>PDF output for invoices and trip invoices with page footers and generation timestamp.</li>
+  </ul>
+
+  <h3>5. Dashboard &amp; analytics</h3>
+  <ul>
+    <li>Six KPI tiles: total vehicles, active drivers, trips in the month, pending invoices, amount billed and flagged trips.</li>
+    <li>Vehicle-category-wise billed amount bar chart.</li>
+    <li>Fleet composition by fuel type donut chart.</li>
+    <li>Recent trip requisitions table with a jump to the full list.</li>
+  </ul>
+
+  <h3>6. Security, audit &amp; integration</h3>
+  <ul>
+    <li>Role-Based Access Control with configurable page-level permissions across 12 modules; menu items and pages a role is not granted are hidden and blocked.</li>
+    <li>Five seeded roles — Fleet Administrator, Billing Administrator, Finance, Approver, Read Only — plus unlimited custom roles.</li>
+    <li>User administration with role assignment, status control, password management and last-login visibility.</li>
+    <li>Secure session handling with HTTP-only cookies; inactive accounts are refused.</li>
+    <li>Audit log covering bill generation, bill approval, manual adjustments, master data changes, user activity and API transactions, filterable by module.</li>
+    <li>OneGP integration transaction log with inbound/outbound direction, payload type, reference ID, status and message for troubleshooting.</li>
+  </ul>
+
+  <h3>7. Mobile in-app view</h3>
+  <ul>
+    <li>Separate driver login by mobile number; staff login by email.</li>
+    <li>Driver home with trip counters by status; drivers see only their own trips.</li>
+    <li>Trip search and status filter chips; trip detail with route map.</li>
+    <li>Start Trip, End Trip, View Invoice and Download Invoice from the phone.</li>
+    <li>Profile with role, user ID and sign-out.</li>
+  </ul>
+
+  <!-- ---------- Traceability ---------- -->
+  <h3 id="traceability">2.1 Requirement coverage</h3>
+  <p>How the delivered software maps to the project requirements document.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Requirement</th><th>Delivered as</th><th>Where</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>§3 Master Data — Vehicle Master</td><td>Full CRUD with rates and recurring charges</td><td>Master Data → Vehicle Master</td></tr>
+        <tr><td>§3 Master Data — Driver Master</td><td>Full CRUD with licence/NID attachments and vendor</td><td>Master Data → Driver Master</td></tr>
+        <tr><td>§3 Vehicle Categories &amp; Fuel Types</td><td>Managed master lists driving every dropdown</td><td>Master Data → Vehicle Category / Fuel Type</td></tr>
+        <tr><td>§3 Rates configurable per Category × Fuel Type</td><td>Rate Card configuration with uniqueness check</td><td>Master Data → Rate Card</td></tr>
+        <tr><td>§4 Trip data received from OneGP</td><td>All 15 fields captured on the requisition record</td><td>Trip Requisitions</td></tr>
+        <tr><td>§5 Billing logic — nine components</td><td>Charge breakdown on every invoice</td><td>Billing → invoice detail</td></tr>
+        <tr><td>§6 Billing rules — auto-generation, consolidation</td><td>Invoice on trip completion, one invoice per vehicle per month</td><td>Billing &amp; Invoices</td></tr>
+        <tr><td>§7 Exception handling &amp; flags</td><td>Cancel/Reject block billing; five review flags</td><td>Trip Requisitions</td></tr>
+        <tr><td>§7 Manual adjustment with audit logging</td><td>Adjustment dialog with mandatory note</td><td>Billing → invoice detail</td></tr>
+        <tr><td>§8 Integration both directions with logs</td><td>REST/JSON APIs plus inbound/outbound transaction log</td><td>Administration → Integration Logs</td></tr>
+        <tr><td>§9 Eight reports with Excel/PDF export</td><td>All eight reports, Excel export on each, PDF for invoices</td><td>Reports</td></tr>
+        <tr><td>§10 RBAC with five roles</td><td>Configurable permissions per role, five seeded roles</td><td>Administration → Roles</td></tr>
+        <tr><td>§10 Audit log across six areas</td><td>Timestamped, user-attributed, module-filterable log</td><td>Audit Log</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== 3. ROLES ============================== -->
+<section class="card" id="roles">
+  <h2><span class="num">03</span> Roles &amp; Access</h2>
+
+  <p>
+    Access is granted per role, per page. A role holds a set of permission keys; a user inherits the keys
+    of the role assigned to them. Pages a role does not hold are hidden from the menu and cannot be
+    opened directly by URL.
+  </p>
+
+  <h3>Seeded roles</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Role</th><th>Purpose</th><th>Modules granted</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Fleet Administrator</b></td>
+          <td>Full access to all modules including user and role administration.</td>
+          <td>All 12 modules</td>
+        </tr>
+        <tr>
+          <td><b>Billing Administrator</b></td>
+          <td>Manages billing, invoices and related reports.</td>
+          <td>Dashboard, Trip Requisitions, Billing &amp; Invoices, Reports, Audit Log</td>
+        </tr>
+        <tr>
+          <td><b>Finance</b></td>
+          <td>Reviews billing and cost reports.</td>
+          <td>Dashboard, Billing &amp; Invoices, Reports</td>
+        </tr>
+        <tr>
+          <td><b>Approver</b></td>
+          <td>Approves trip requisitions.</td>
+          <td>Dashboard, Trip Requisitions</td>
+        </tr>
+        <tr>
+          <td><b>Read Only</b></td>
+          <td>View-only access to core fleet data.</td>
+          <td>Dashboard, Vehicle Master, Driver Master, Trip Requisitions, Reports</td>
+        </tr>
+        <tr>
+          <td><b>Driver</b></td>
+          <td>Mobile in-app view only — own trips.</td>
+          <td>Mobile in-app view (no desktop modules)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The 12 permission modules</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Group</th><th>Module</th><th>Page</th></tr></thead>
+      <tbody>
+        <tr><td>General</td><td>Dashboard</td><td class="path">/</td></tr>
+        <tr><td>Master Data</td><td>Vehicle Master</td><td class="path">/vehicles</td></tr>
+        <tr><td>Master Data</td><td>Driver Master</td><td class="path">/drivers</td></tr>
+        <tr><td>Master Data</td><td>Vehicle Category</td><td class="path">/vehicle-categories</td></tr>
+        <tr><td>Master Data</td><td>Fuel Type</td><td class="path">/fuel-types</td></tr>
+        <tr><td>General</td><td>Trip Requisitions</td><td class="path">/requisitions</td></tr>
+        <tr><td>General</td><td>Billing &amp; Invoices</td><td class="path">/billing</td></tr>
+        <tr><td>General</td><td>Reports</td><td class="path">/reports</td></tr>
+        <tr><td>General</td><td>Audit Log</td><td class="path">/audit-log</td></tr>
+        <tr><td>Administration</td><td>Users</td><td class="path">/users</td></tr>
+        <tr><td>Administration</td><td>Roles</td><td class="path">/roles</td></tr>
+        <tr><td>Administration</td><td>Integration Logs</td><td class="path">/integration</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub">Permissions control page access. Within a page a user has the actions that page offers.</p>
+</section>
+
+<!-- ============================== 4. LOGIN ============================== -->
+<section class="card" id="login">
+  <h2><span class="num">04</span> Signing In</h2>
+
+  <ol class="steps">
+    <li>Open the application URL. You are taken to the sign-in screen.</li>
+    <li>Enter your <span class="ui">Email</span> and <span class="ui">Password</span>. Use the eye icon to reveal the password if needed.</li>
+    <li>Select <span class="ui">Sign In</span>. On success you land on the Dashboard.</li>
+  </ol>
+
+  <figure class="shot" data-file="01-login.png">
+    <img src="/user-manual/screenshots/01-login.png" alt="Fleet Management sign-in screen" />
+    <figcaption><b>Figure 1</b> — Sign-in screen. Enter your Fleet Management System credentials to continue.</figcaption>
+  </figure>
+
+  <h4>Navigation after sign-in</h4>
+  <ul>
+    <li><b>Sidebar</b> — grouped menu: Dashboard, Master Data, Trip Requisitions, Reports, Audit Log, Administration. Use the chevron in the sidebar header to collapse it to icons only; hover an icon to see its label. On a small screen use the hamburger icon in the top bar.</li>
+    <li><b>Top bar</b> — current page title, notifications, and your name with a menu containing <span class="ui">My Profile</span>, <span class="ui">Settings</span> and <span class="ui">Sign Out</span>.</li>
+  </ul>
+
+  <div class="warnbox">
+    <b>If sign-in fails</b>
+    <p><b>“Invalid email or password.”</b> — check both fields; the message is deliberately identical for an unknown email and a wrong password.<br />
+    <b>“This account is inactive. Contact your Fleet Administrator.”</b> — your user record has been set to Inactive.<br />
+    <b>Redirected back to the Dashboard after clicking a link</b> — your role does not hold that page's permission.</p>
+  </div>
+</section>
+
+<!-- ============================== 5. DASHBOARD ============================== -->
+<section class="card" id="dashboard">
+  <h2><span class="num">05</span> Dashboard</h2>
+
+  <p><b>Fleet Billing Overview</b> — automated billing generated from OneGP trip requisitions and vehicle master data.</p>
+
+  <figure class="shot" data-file="02-dashboard.png">
+    <img src="/user-manual/screenshots/02-dashboard.png" alt="Fleet Billing Overview dashboard with KPI cards and charts" />
+    <figcaption><b>Figure 2</b> — Dashboard: six KPI tiles, category-wise billing chart, fuel-type composition and recent requisitions.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Element</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ui">Total Vehicles</span></td><td>Vehicles in the master, with the active count below.</td></tr>
+        <tr><td><span class="ui">Active Drivers</span></td><td>Drivers with status Active, out of the total.</td></tr>
+        <tr><td><span class="ui">Trips</span></td><td>Requisitions raised in the reporting month.</td></tr>
+        <tr><td><span class="ui">Pending Invoices</span></td><td>Invoices still in Draft or Pending Approval.</td></tr>
+        <tr><td><span class="ui">Billed</span></td><td>Total invoiced amount for the reporting month.</td></tr>
+        <tr><td><span class="ui">Flagged Trips</span></td><td>Requisitions carrying at least one exception flag — review these first.</td></tr>
+        <tr><td><span class="ui">Vehicle Category-wise Billed Amount</span></td><td>Bar chart of total billed value per vehicle category.</td></tr>
+        <tr><td><span class="ui">Fleet by Fuel Type</span></td><td>Donut chart of how many vehicles run on each fuel type.</td></tr>
+        <tr><td><span class="ui">Recent Trip Requisitions</span></td><td>The latest six trips with ticket ID, employee, vehicle, distance and status. <span class="ui">View All</span> opens the full list.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== 6. MASTER DATA ============================== -->
+<section class="card" id="masterdata">
+  <h2><span class="num">06</span> Master Data</h2>
+
+  <p>
+    Master data drives every calculation in the system. Set it up in this order:
+    <b>Vehicle Category</b> → <b>Fuel Type</b> → <b>Rate Card</b> → <b>Vehicle Master</b> → <b>Driver Master</b>.
+    Categories and fuel types populate the dropdowns used by rate cards and vehicles, so create them first.
+  </p>
+
+  <!-- ---------- 6.1 Vehicles ---------- -->
+  <h3 id="vehicles">6.1 Vehicle Master</h3>
+  <p>Manage the vehicle registry, categories, fuel types and billing rates.</p>
+
+  <figure class="shot" data-file="03-vehicle-master.png">
+    <img src="/user-manual/screenshots/03-vehicle-master.png" alt="Vehicle Master list" />
+    <figcaption><b>Figure 3</b> — Vehicle Master list: rates and recurring charges are shown per vehicle.</figcaption>
+  </figure>
+
+  <p>The list shows <span class="ui">Vehicle</span>, <span class="ui">Category / Fuel / Seats</span>,
+  <span class="ui">Partner</span>, <span class="ui">Rates</span> (fixed rent, per KM, OT per hour),
+  <span class="ui">Charges</span> (personal usage, toll, parking), <span class="ui">Other Charges</span>
+  (startup fuel, mobile bill, other), <span class="ui">Status</span> and row actions.</p>
+
+  <h4>Adding a vehicle</h4>
+  <ol class="steps">
+    <li>Select <span class="ui">Add Vehicle</span>.</li>
+    <li>Under <b>Vehicle Details</b> fill <span class="ui">Vehicle Number</span> (required),
+      <span class="ui">Vehicle Category</span>, <span class="ui">Fuel Type</span>,
+      <span class="ui">Seat Capacity</span>, <span class="ui">Partner / Vendor</span> (required) and
+      <span class="ui">Status</span> — Active, Inactive or Maintenance.</li>
+    <li>Under <b>Billing Rates</b> enter <span class="ui">Monthly Fixed Rent</span>,
+      <span class="ui">Per KM Rate</span> and <span class="ui">OT Rate / hr</span>.</li>
+    <li>Under <b>Additional Charges</b> enter the recurring monthly amounts billed alongside the fixed rent:
+      <span class="ui">Personal Usage Bill</span>, <span class="ui">Toll Charge</span>,
+      <span class="ui">Parking Charge</span>, <span class="ui">Startup Fuel Charge</span>,
+      <span class="ui">Mobile Bill</span> and <span class="ui">Other Charge</span>.</li>
+    <li>Select <span class="ui">Save</span>. A confirmation appears at the bottom of the screen.</li>
+  </ol>
+
+  <figure class="shot" data-file="04-vehicle-add-dialog.png">
+    <img src="/user-manual/screenshots/04-vehicle-add-dialog.png" alt="Add Vehicle dialog" />
+    <figcaption><b>Figure 4</b> — Add Vehicle: vehicle details, billing rates and additional charges in one form.</figcaption>
+  </figure>
+
+  <div class="note">
+    <b>Note</b>
+    <p>Only vehicles with status <span class="chip ok">Active</span> can be assigned to a trip. Set a vehicle
+    to <span class="chip warn">Maintenance</span> to take it out of assignment without deleting its history.</p>
+  </div>
+
+  <h4>Editing and deleting</h4>
+  <p>Use the pencil icon to <span class="ui">Edit</span> a row and the bin icon to <span class="ui">Delete</span> it.
+  Deletion is immediate — remove a vehicle only if it has never been billed; otherwise set it to Inactive.</p>
+
+  <!-- ---------- 6.2 Drivers ---------- -->
+  <h3 id="drivers">6.2 Driver Master</h3>
+  <p>Manage driver profiles, licence / NID documentation and vendor assignment.</p>
+
+  <figure class="shot" data-file="05-driver-master.png">
+    <img src="/user-manual/screenshots/05-driver-master.png" alt="Driver Master list" />
+    <figcaption><b>Figure 5</b> — Driver Master: the paperclip icon indicates an attached licence or NID document.</figcaption>
+  </figure>
+
+  <ol class="steps">
+    <li>Select <span class="ui">Add Driver</span>.</li>
+    <li>Enter <span class="ui">Driver Name</span>, <span class="ui">Mobile Number</span>,
+      <span class="ui">Driving License Number</span> and <span class="ui">NID Number</span> — all required.</li>
+    <li>Record the document references in <span class="ui">License Attachment</span> and
+      <span class="ui">NID Attachment</span>.</li>
+    <li>Enter the <span class="ui">Vendor</span> and set <span class="ui">Status</span> — Active, Inactive or Suspended.</li>
+    <li>Select <span class="ui">Save</span>.</li>
+  </ol>
+
+  <figure class="shot" data-file="06-driver-add-dialog.png">
+    <img src="/user-manual/screenshots/06-driver-add-dialog.png" alt="Add Driver dialog" />
+    <figcaption><b>Figure 6</b> — Add Driver form.</figcaption>
+  </figure>
+
+  <div class="tip">
+    <b>Tip</b>
+    <p>The mobile number is also the driver's identity in the mobile in-app view, so enter it accurately and
+    keep the format consistent across the fleet.</p>
+  </div>
+
+  <!-- ---------- 6.3 Categories & fuel ---------- -->
+  <h3 id="categories">6.3 Vehicle Categories &amp; Fuel Types</h3>
+  <p>
+    Both are simple managed lists with the same behaviour: a counter chip, a single-field add/edit dialog,
+    a duplicate-name check and row-level edit and delete. Whatever you maintain here appears in the
+    Vehicle Master and Rate Card dropdowns.
+  </p>
+
+  <figure class="shot" data-file="07-vehicle-categories.png">
+    <img src="/user-manual/screenshots/07-vehicle-categories.png" alt="Vehicle Categories list" />
+    <figcaption><b>Figure 7</b> — Vehicle Categories: Sedan, SUV, Microbus (7 &amp; 12 seater), Pickup, Minibus, Ambulance, Others.</figcaption>
+  </figure>
+
+  <figure class="shot" data-file="08-fuel-types.png">
+    <img src="/user-manual/screenshots/08-fuel-types.png" alt="Fuel Types list" />
+    <figcaption><b>Figure 8</b> — Fuel Types: CNG, LPG, Octane, Diesel, Hybrid.</figcaption>
+  </figure>
+
+  <div class="warnbox">
+    <b>Before you delete</b>
+    <p>Deleting a category or fuel type does not change vehicles already using it, but its rate cards will no
+    longer be reachable from the dropdowns. Retire values only when no active vehicle uses them.</p>
+  </div>
+
+  <!-- ---------- 6.4 Rate card ---------- -->
+  <h3 id="ratecard">6.4 Rate Card Configuration</h3>
+  <p>
+    Configurable billing rates per Vehicle Category and Fuel Type combination — this is where the
+    requirement “billing rates must be configurable for each Vehicle Category and Fuel Type combination”
+    is satisfied.
+  </p>
+
+  <figure class="shot" data-file="09-rate-card.png">
+    <img src="/user-manual/screenshots/09-rate-card.png" alt="Rate Card Configuration" />
+    <figcaption><b>Figure 9</b> — Rate Card Configuration with counters for categories, fuel types and configured combinations.</figcaption>
+  </figure>
+
+  <ol class="steps">
+    <li>Select <span class="ui">Add Rate Card</span>.</li>
+    <li>Choose the <span class="ui">Vehicle Category</span> and <span class="ui">Fuel Type</span>.</li>
+    <li>Enter <span class="ui">Monthly Fixed Rent (BDT)</span>, <span class="ui">Per KM Rate (BDT)</span> and
+      <span class="ui">OT Rate / hr (BDT)</span>.</li>
+    <li>Select <span class="ui">Save</span>.</li>
+  </ol>
+
+  <div class="note">
+    <b>One card per combination</b>
+    <p>If a card already exists for that pair the system refuses it: <em>“A rate card for this Category + Fuel
+    Type combination already exists.”</em> Edit the existing card instead. Aim for full coverage — one card for
+    every combination your fleet actually uses.</p>
+  </div>
+</section>
+
+<!-- ============================== 7. REQUISITIONS ============================== -->
+<section class="card" id="requisitions">
+  <h2><span class="num">07</span> Trip Requisitions</h2>
+
+  <p>Trip data received from OneGP after vehicle requisition and assignment. This is the operational
+  heart of the system — everything billed starts here.</p>
+
+  <figure class="shot" data-file="10-requisitions-list.png">
+    <img src="/user-manual/screenshots/10-requisitions-list.png" alt="Trip Requisitions list" />
+    <figcaption><b>Figure 10</b> — Trip Requisitions: counters, search, status filter and the requisition grid.</figcaption>
+  </figure>
+
+  <h3>Counters</h3>
+  <ul>
+    <li><span class="ui">Total Requisitions</span> — every requisition in the system.</li>
+    <li><span class="ui">Invoiced Trips</span> — completed trips matched to a monthly invoice.</li>
+    <li><span class="ui">Flagged for Review</span> — requisitions with at least one exception flag.</li>
+    <li><span class="ui">Cancelled / Rejected</span> — requisitions that will never be billed.</li>
+  </ul>
+
+  <h3>Finding a requisition</h3>
+  <p>Type into <span class="ui">Search by requisition id, employee, vehicle, driver...</span> to match on
+  requisition ID, employee, department, vehicle, driver or vendor. Narrow further with the
+  <span class="ui">Status</span> filter: <span class="ui">All</span>, <span class="ui">Completed</span>,
+  <span class="ui">In Progress</span>, <span class="ui">Cancelled</span>, <span class="ui">Rejected</span>,
+  <span class="ui">Flagged</span> or <span class="ui">Uninvoiced</span>.</p>
+
+  <h3>Reading the grid</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Column</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ui">Requisition Id</span></td><td>Ticket ID and the date it was added. A clock icon means the trip time was extended — open the details for the reason.</td></tr>
+        <tr><td><span class="ui">Employee</span></td><td>Employee name with department and vendor.</td></tr>
+        <tr><td><span class="ui">Vehicle</span></td><td>Vehicle number with its category and per-KM rate, or <span class="chip grey">Unassigned</span>.</td></tr>
+        <tr><td><span class="ui">Driver</span></td><td>Driver name and mobile, or <span class="chip grey">Unassigned</span>.</td></tr>
+        <tr><td><span class="ui">Distance / Time</span></td><td>Distance in km and total travel time.</td></tr>
+        <tr><td><span class="ui">Approx. Start / End</span></td><td>The requested (approximate) window.</td></tr>
+        <tr><td><span class="ui">Actual Start / End</span></td><td>The recorded trip start and end — the basis for billing.</td></tr>
+        <tr><td><span class="ui">Trip Status</span></td><td>In Progress, Started, Completed, Cancelled or Rejected.</td></tr>
+        <tr><td><span class="ui">Actions</span></td><td>Row menu — see below.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Creating a requisition manually</h3>
+  <p>Requisitions normally arrive from OneGP. Use <span class="ui">New Requisition</span> for trips that need
+  to be entered directly.</p>
+
+  <ol class="steps">
+    <li>Select <span class="ui">New Requisition</span>.</li>
+    <li>Optionally pick a <span class="ui">Vehicle (optional)</span> and <span class="ui">Driver (optional)</span>
+      — leave both blank to assign later from the list.</li>
+    <li>Enter <span class="ui">Employee Name</span> and <span class="ui">Department</span> (both required) and
+      the <span class="ui">Vendor (optional)</span>.</li>
+    <li>On the map, set the <span class="ui">Pickup Location</span> (green pin) and
+      <span class="ui">Destination</span> (red pin). Search an address or use
+      <span class="ui">Click map to set:</span> with <span class="ui">Pickup</span> / <span class="ui">Destination</span>,
+      then drag the pins to fine-tune. The route and distance are calculated automatically.</li>
+    <li>Set <span class="ui">Approx. Start Time</span> and <span class="ui">Approx. End Time</span>; the
+      approximate duration is shown as a chip.</li>
+    <li>Select <span class="ui">Create Requisition</span>. The requisition opens as
+      <span class="chip info">In Progress</span>.</li>
+  </ol>
+
+  <figure class="shot" data-file="11-requisition-new.png">
+    <img src="/user-manual/screenshots/11-requisition-new.png" alt="New Requisition form with route map" />
+    <figcaption><b>Figure 11</b> — New Requisition: trip details on the left, map-based route selection on the right.</figcaption>
+  </figure>
+
+  <h3>Assigning a vehicle and driver</h3>
+  <ol class="steps">
+    <li>Open the row menu and choose <span class="ui">Assign Vehicle</span> (or
+      <span class="ui">Reassign Vehicle</span> / <span class="ui">Assign Driver</span> — all open the same dialog).</li>
+    <li>Select the <span class="ui">Vehicle</span>. Only Active vehicles are listed; the card below confirms
+      category, fuel type, seats, partner and per-KM rate.</li>
+    <li>Select the <span class="ui">Driver</span> — Active drivers only, listed with their mobile number.</li>
+    <li>Select <span class="ui">Assign</span>.</li>
+  </ol>
+
+  <figure class="shot" data-file="12-requisition-assign.png">
+    <img src="/user-manual/screenshots/12-requisition-assign.png" alt="Assign Vehicle and Driver dialog" />
+    <figcaption><b>Figure 12</b> — Assign Vehicle &amp; Driver, showing the selected vehicle's rate at a glance.</figcaption>
+  </figure>
+
+  <div class="note">
+    <b>Assignment window</b>
+    <p>Vehicle and driver can only be assigned or reassigned while the trip is
+    <span class="chip info">In Progress</span>. Once the trip has started the assignment is locked so that
+    billing always matches the vehicle that actually ran the trip.</p>
+  </div>
+
+  <h3>Running a trip</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Action</th><th>Available when</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="ui">Start Trip</span></td>
+          <td>Vehicle and driver assigned, trip not yet started, not cancelled or rejected.</td>
+          <td>Records the actual start time and moves the trip to <span class="chip warn">Started</span>.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">End Trip</span></td>
+          <td>Trip started and not yet ended.</td>
+          <td>Records the end time, computes total travel time, sets <span class="chip ok">Completed</span> and generates the bill.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">Extend Time</span></td>
+          <td>Trip started and not yet ended.</td>
+          <td>Moves the planned end time with a mandatory reason, kept in the extension history.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">Cancel</span></td>
+          <td>Not already Completed, Cancelled or Rejected.</td>
+          <td>Sets <span class="chip grey">Cancelled</span> — no bill is generated.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">Reject</span></td>
+          <td>Not already Completed, Cancelled or Rejected.</td>
+          <td>Sets <span class="chip err">Rejected</span> — no bill is generated.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">Edit</span></td>
+          <td>Not Completed, Cancelled or Rejected.</td>
+          <td>Reopens the requisition form.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">View</span> / <span class="ui">View Invoice</span></td>
+          <td>Always / when the trip is invoiced.</td>
+          <td>Opens the requisition details, or the trip invoice preview.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Extending trip time</h4>
+  <ol class="steps">
+    <li>Choose <span class="ui">Extend Time</span> from the row menu.</li>
+    <li>Set the <span class="ui">New Trip End Time</span>.</li>
+    <li>Enter the <span class="ui">Reason for Extension (required)</span> — the request is refused without it.</li>
+    <li>Select <span class="ui">Extend</span>. The previous end time, the new end time, your name and the
+      timestamp are stored and shown on the requisition details.</li>
+  </ol>
+
+  <figure class="shot" data-file="13-requisition-extend-time.png">
+    <img src="/user-manual/screenshots/13-requisition-extend-time.png" alt="Extend Trip Time dialog" />
+    <figcaption><b>Figure 13</b> — Extend Trip Time. A reason is mandatory and is retained for audit.</figcaption>
+  </figure>
+
+  <h3>Requisition details</h3>
+  <p>
+    <span class="ui">View</span> opens the full record: requisition and employee information, assignment,
+    the approximate window, the trip timeline (start, end, distance, travel time, invoice), any time
+    extensions, any exception flags, and a route preview map. Footer buttons let you continue straight into
+    <span class="ui">Edit</span>, <span class="ui">Start Trip</span>, <span class="ui">End Trip</span> or
+    <span class="ui">View Invoice</span>.
+  </p>
+
+  <figure class="shot" data-file="14-requisition-details.png">
+    <img src="/user-manual/screenshots/14-requisition-details.png" alt="Requisition Details with route map" />
+    <figcaption><b>Figure 14</b> — Requisition Details: timeline, flags and route preview side by side.</figcaption>
+  </figure>
+
+  <h3>Trip invoice</h3>
+  <p>
+    <span class="ui">View Invoice</span> shows the trip-level invoice for a completed trip: bill-to employee
+    and department, trip date, vendor, driver, pickup, destination, vehicle and the distance charge line
+    (distance × rate per km). <span class="ui">Download PDF</span> saves it. The footer states which monthly
+    invoice the trip belongs to.
+  </p>
+
+  <figure class="shot" data-file="15-trip-invoice.png">
+    <img src="/user-manual/screenshots/15-trip-invoice.png" alt="Trip Invoice preview" />
+    <figcaption><b>Figure 15</b> — Trip Invoice preview with PDF download.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 8. BILLING ============================== -->
+<section class="card" id="billing">
+  <h2><span class="num">08</span> Billing &amp; Invoices</h2>
+
+  <p>Monthly vehicle invoices consolidated from approved trips, fixed rent, OT, toll, parking and other charges.</p>
+
+  <figure class="shot" data-file="16-billing-list.png">
+    <img src="/user-manual/screenshots/16-billing-list.png" alt="Billing and Invoices list" />
+    <figcaption><b>Figure 16</b> — Billing &amp; Invoices: invoiced / paid / pending totals with a billing-month filter.</figcaption>
+  </figure>
+
+  <ul>
+    <li><span class="ui">Total Invoiced</span>, <span class="ui">Paid</span> and
+      <span class="ui">Pending / Draft</span> summarise the value of the filtered set.</li>
+    <li>Use <span class="ui">Billing Month</span> to focus on one month or keep <span class="ui">All Months</span>.</li>
+    <li>The grid lists <span class="ui">Invoice Number</span>, <span class="ui">Vehicle</span>,
+      <span class="ui">Partner / Vendor</span>, <span class="ui">Billing Month</span>,
+      <span class="ui">Trips</span>, <span class="ui">Total Bill</span> and <span class="ui">Status</span>.
+      Select an invoice number to open it.</li>
+    <li><span class="ui">Generate Monthly Bills</span> triggers billing for completed, unbilled trips.</li>
+  </ul>
+
+  <div class="note">
+    <b>How invoices come into existence</b>
+    <p>An invoice is created automatically when a trip is ended — the confirmation reads
+    <em>“Trip ended. Invoice generated.”</em> Further completed trips for the same vehicle in the same month
+    are consolidated into that single monthly invoice. <span class="ui">Generate Monthly Bills</span> is the
+    manual re-trigger for a period close.</p>
+  </div>
+
+  <!-- ---------- 8.1 Billing logic ---------- -->
+  <h3 id="billing-logic">8.1 Billing logic</h3>
+
+  <div class="formula">
+    <em>Total Bill</em> = Monthly Fixed Rent (Body Rent)<br />
+    &nbsp;&nbsp;+ Personal Usage Bill<br />
+    &nbsp;&nbsp;+ Distance Charge&nbsp;&nbsp;<span style="color:#8fa6c4">(Distance KM × Per KM Rate)</span><br />
+    &nbsp;&nbsp;+ Overtime Charge&nbsp;&nbsp;<span style="color:#8fa6c4">(OT hours × OT rate per hour)</span><br />
+    &nbsp;&nbsp;+ Toll Charge<br />
+    &nbsp;&nbsp;+ Parking Charge<br />
+    &nbsp;&nbsp;+ Startup Fuel Charge<br />
+    &nbsp;&nbsp;+ Mobile Bill<br />
+    &nbsp;&nbsp;+ Other Approved Charges
+  </div>
+
+  <h4>Rules applied</h4>
+  <ul>
+    <li>Bills are generated automatically after trip completion.</li>
+    <li>KM rates are taken from the Vehicle Category and Fuel Type combination on the rate card, with the
+      vehicle's own rate as the fallback.</li>
+    <li>Overtime is charged when trip duration exceeds the configured working hours.</li>
+    <li>Monthly fixed rent is allocated according to the configured business rule.</li>
+    <li>Multiple trips for the same vehicle within a billing month consolidate into one monthly invoice.</li>
+    <li>All billing parameters — KM rate, OT rate, fixed rent and the recurring charges — are maintained
+      through the master tables, never hard-coded.</li>
+  </ul>
+
+  <h4>When no bill is generated</h4>
+  <ul>
+    <li>The trip was cancelled before starting.</li>
+    <li>The trip was rejected.</li>
+    <li>The vehicle assignment is invalid.</li>
+    <li>Trip completion information is missing.</li>
+  </ul>
+  <p class="sub">Trips in these states are excluded from billing but remain visible and auditable. See
+  <a href="#appendix-b">Appendix B</a> for the flags raised when trip data looks incomplete.</p>
+
+  <!-- ---------- 8.2 Invoice detail ---------- -->
+  <h3 id="invoice-detail">8.2 Invoice detail &amp; approval</h3>
+
+  <figure class="shot" data-file="17-invoice-detail.png">
+    <img src="/user-manual/screenshots/17-invoice-detail.png" alt="Invoice detail with charge breakdown" />
+    <figcaption><b>Figure 17</b> — Invoice detail: full charge breakdown, invoice details and status actions.</figcaption>
+  </figure>
+
+  <p>The <b>Charge Breakdown</b> card itemises all nine components and the total:</p>
+  <ol>
+    <li>Monthly Fixed Vehicle Rent (Body Rent)</li>
+    <li>Personal Usage Bill</li>
+    <li>Distance Charge — shown as <em>distance km × rate</em></li>
+    <li>Overtime Charge — shown with the OT hours</li>
+    <li>Toll Charge</li>
+    <li>Parking Charge</li>
+    <li>Startup Fuel Charge</li>
+    <li>Mobile Bill</li>
+    <li>Other Approved Charges</li>
+  </ol>
+  <p><b>Invoice Details</b> shows vehicle category, partner / vendor, trip count, generated date, approved by
+  and approved date. Any manual adjustment note is displayed as a highlighted alert.</p>
+
+  <h4>Approval workflow</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Current status</th><th>Available action</th><th>Moves to</th><th>Typically done by</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip grey">Draft</span></td><td><span class="ui">Submit for Approval</span></td><td><span class="chip warn">Pending Approval</span></td><td>Billing Administrator</td></tr>
+        <tr><td><span class="chip warn">Pending Approval</span></td><td><span class="ui">Approve Invoice</span></td><td><span class="chip ok">Approved</span></td><td>Finance / Approver</td></tr>
+        <tr><td><span class="chip warn">Pending Approval</span></td><td><span class="ui">Reject Invoice</span></td><td><span class="chip err">Rejected</span></td><td>Finance</td></tr>
+        <tr><td><span class="chip ok">Approved</span></td><td><span class="ui">Mark as Paid</span></td><td><span class="chip ok">Paid</span></td><td>Finance</td></tr>
+        <tr><td>Any</td><td><span class="ui">Manual Adjustment</span></td><td>Status unchanged</td><td>Authorised administrator</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Use <span class="ui">Print</span> for a hard copy or PDF, and <span class="ui">Back</span> to return to
+  the invoice list. Every status change is written to the audit log with the actor's name.</p>
+
+  <!-- ---------- 8.3 Adjustment ---------- -->
+  <h3 id="adjustment">8.3 Manual billing adjustment</h3>
+  <p>
+    Authorised Fleet Administrators can correct an invoice without editing the underlying trip data. All
+    manual adjustments are recorded in the audit log with mandatory notes.
+  </p>
+
+  <ol class="steps">
+    <li>Open the invoice and select <span class="ui">Manual Adjustment</span>.</li>
+    <li>Enter the <span class="ui">Adjustment Amount (BDT, use negative to deduct)</span>. A positive value
+      increases the bill; a negative value reduces it.</li>
+    <li>Enter the <span class="ui">Reason / Note (required)</span>.</li>
+    <li>Select <span class="ui">Apply Adjustment</span> — enabled only when a reason is present and the
+      amount is not zero.</li>
+  </ol>
+
+  <figure class="shot" data-file="18-invoice-adjustment.png">
+    <img src="/user-manual/screenshots/18-invoice-adjustment.png" alt="Manual Billing Adjustment dialog" />
+    <figcaption><b>Figure 18</b> — Manual Billing Adjustment. The note is mandatory and is written to the audit log.</figcaption>
+  </figure>
+
+  <div class="warnbox">
+    <b>Audit obligation</b>
+    <p>Write the reason so that a reviewer months later can understand it without asking you — reference the
+    ticket ID, the log book, or the vendor communication that justifies the change.</p>
+  </div>
+</section>
+
+<!-- ============================== 9. REPORTS ============================== -->
+<section class="card" id="reports">
+  <h2><span class="num">09</span> Reports &amp; Export</h2>
+
+  <p>Vehicle, vendor, department and driver reports generated from billing and trip data. Filter by
+  month / year and export to Excel.</p>
+
+  <figure class="shot" data-file="19-reports-hub.png">
+    <img src="/user-manual/screenshots/19-reports-hub.png" alt="Reports hub with eight report cards" />
+    <figcaption><b>Figure 19</b> — The Reports hub. Select a card to open that report.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Report</th><th>Answers</th><th>Columns</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Monthly Vehicle-wise Billing</b></td>
+          <td>What did each vehicle cost this month?</td>
+          <td>Vehicle No., Vehicle Type, Rent Amount, Total KM Run, Total KM Cost, Mobile Bill, Total Amount, Total With VAT</td>
+        </tr>
+        <tr>
+          <td><b>Vendor-wise Billing</b></td>
+          <td>What do we owe each fleet partner?</td>
+          <td>Vendor, Trip Count, Vehicles Used, Total Distance (KM), Total Billed</td>
+        </tr>
+        <tr>
+          <td><b>Department-wise Vehicle Utilization</b></td>
+          <td>Which departments consume the fleet?</td>
+          <td>Department, Trip Count, Vehicles Used, Total Distance (KM)</td>
+        </tr>
+        <tr>
+          <td><b>Distance Travelled</b></td>
+          <td>How far did each vehicle run?</td>
+          <td>Vehicle Number, Total Distance (KM)</td>
+        </tr>
+        <tr>
+          <td><b>Overtime Cost</b></td>
+          <td>Where is OT being incurred?</td>
+          <td>Vehicle Number, OT Hours, OT Cost</td>
+        </tr>
+        <tr>
+          <td><b>Vehicle Category-wise Cost Analysis</b></td>
+          <td>Which categories drive spend?</td>
+          <td>Vehicle Category, Total Cost</td>
+        </tr>
+        <tr>
+          <td><b>Fuel Type-wise Cost Analysis</b></td>
+          <td>Which fuel types cost most?</td>
+          <td>Fuel Type, Total Cost</td>
+        </tr>
+        <tr>
+          <td><b>Driver Utilization</b></td>
+          <td>How busy is each driver?</td>
+          <td>Driver Name, Trip Count, Total Distance (KM)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Running a report</h3>
+  <ol class="steps">
+    <li>Open the report from the Reports hub or the sidebar.</li>
+    <li>In the first filter, tick the entities to include — vehicles, vendors, departments, drivers,
+      categories or fuel types. Use <span class="ui">Select All</span> for the whole set.</li>
+    <li>Choose the <span class="ui">Month</span> and <span class="ui">Year</span>.</li>
+    <li>Select <span class="ui">Search</span>. Until you do, the page shows the prompt to select filters —
+      this is expected, not an error.</li>
+    <li>Select <span class="ui">Export Excel</span> to download the result. Run the search first; exporting
+      before a search shows a reminder.</li>
+  </ol>
+
+  <figure class="shot" data-file="20-report-vehicle-billing.png">
+    <img src="/user-manual/screenshots/20-report-vehicle-billing.png" alt="Vehicle Billing Report with filters" />
+    <figcaption><b>Figure 20</b> — Vehicle Billing Report: multi-select vehicle filter, month, year and Search.</figcaption>
+  </figure>
+
+  <h3>The detailed vehicle billing export</h3>
+  <p>
+    The on-screen Vehicle Billing Report is a summary; the Excel export is the full billing sheet used for
+    vendor settlement — around 40 columns under grouped headers, with the header rows frozen:
+  </p>
+  <ul>
+    <li>Identification — SL No., vehicle no., mobile no., vehicle type, rent basis (monthly / daily).</li>
+    <li>Vehicle usage duration — from and to.</li>
+    <li>Fuel consumption reference rate and total KM run as per log book.</li>
+    <li>Fuel-wise KM distribution and KM rate including tax, per fuel (Octane, LPG, CNG, Hybrid).</li>
+    <li>Total KM cost per fuel plus the total.</li>
+    <li>Start-up fuel cost with tax; driver DA with tax (days and amount).</li>
+    <li>Toll and parking with tax; rent amount with tax.</li>
+    <li>Extra service charge with tax — rate, hours, amount.</li>
+    <li>Mobile bill; adjustment / absent; Iftar bill rate, number of days and amount.</li>
+    <li>Total amount, <b>Add 15%</b> VAT, total amount with VAT &amp; tax, and remarks.</li>
+  </ul>
+
+  <figure class="shot" data-file="21-report-excel-export.png">
+    <img src="/user-manual/screenshots/21-report-excel-export.png" alt="Exported vehicle billing Excel sheet" />
+    <figcaption><b>Figure 21</b> — The exported Excel sheet with grouped headers and a frozen header row.</figcaption>
+  </figure>
+
+  <div class="tip">
+    <b>Tip</b>
+    <p>Adjustments and absences must be entered as <b>negative</b> amounts to deduct — the column is summed
+    into the total, not subtracted from it.</p>
+  </div>
+</section>
+
+<!-- ============================== 10. AUDIT ============================== -->
+<section class="card" id="audit">
+  <h2><span class="num">10</span> Audit Log</h2>
+
+  <p>
+    Audit trail for bill generation, approvals, manual adjustments, master data changes, user activity and
+    API transactions.
+  </p>
+
+  <figure class="shot" data-file="22-audit-log.png">
+    <img src="/user-manual/screenshots/22-audit-log.png" alt="Audit Log" />
+    <figcaption><b>Figure 22</b> — Audit Log with the module filter.</figcaption>
+  </figure>
+
+  <ul>
+    <li>Columns: <span class="ui">Timestamp</span>, <span class="ui">User</span>,
+      <span class="ui">Action</span>, <span class="ui">Module</span>, <span class="ui">Details</span>.</li>
+    <li>Filter with <span class="ui">Module</span> — keep <span class="ui">All Modules</span> or pick one
+      (Billing, Vehicle Master, Driver Master, Rate Card, User Management, OneGP Integration and others).</li>
+    <li><span class="ui">Refresh</span> pulls the latest entries.</li>
+    <li>Sort or filter any column from its header menu.</li>
+  </ul>
+
+  <div class="note">
+    <b>Read-only by design</b>
+    <p>Audit entries cannot be edited or deleted from the application. This is what makes the log usable as
+    evidence during an audit.</p>
+  </div>
+</section>
+
+<!-- ============================== 11. INTEGRATION ============================== -->
+<section class="card" id="integration">
+  <h2><span class="num">11</span> OneGP Integration</h2>
+
+  <p>API-based REST/JSON transaction logs between OneGP and the Fleet Management System.</p>
+
+  <h3>What flows where</h3>
+  <div class="fgrid">
+    <div class="fcard">
+      <h5>OneGP → Fleet Management (inbound)</h5>
+      <ul>
+        <li>Vehicle requisition</li>
+        <li>Vehicle assignment</li>
+        <li>Employee information</li>
+        <li>Trip details</li>
+        <li>Trip completion status</li>
+      </ul>
+    </div>
+    <div class="fcard">
+      <h5>Fleet Management → OneGP (outbound)</h5>
+      <ul>
+        <li>Invoice number</li>
+        <li>Billing status</li>
+        <li>Payment status</li>
+        <li>Error status</li>
+      </ul>
+    </div>
+  </div>
+
+  <figure class="shot" data-file="23-integration-logs.png">
+    <img src="/user-manual/screenshots/23-integration-logs.png" alt="OneGP Integration Logs" />
+    <figcaption><b>Figure 23</b> — Integration Logs with inbound, outbound and failed/retried counters.</figcaption>
+  </figure>
+
+  <ul>
+    <li>Three counters: <span class="ui">Inbound (OneGP → Fleet)</span>,
+      <span class="ui">Outbound (Fleet → OneGP)</span> and <span class="ui">Failed / Retried</span>.</li>
+    <li>Columns: <span class="ui">Timestamp</span>, <span class="ui">Direction</span>,
+      <span class="ui">Payload Type</span>, <span class="ui">Reference ID</span>,
+      <span class="ui">Status</span>, <span class="ui">Message</span>.</li>
+    <li>Use the reference ID to trace a specific requisition or invoice end to end across both systems.</li>
+  </ul>
+
+  <div class="warnbox">
+    <b>When a trip has not arrived</b>
+    <p>If a requisition is missing from the Fleet Management System, check this log for a failed inbound
+    transaction carrying that ticket ID and read the message before raising it with the OneGP team.</p>
+  </div>
+</section>
+
+<!-- ============================== 12. ADMIN ============================== -->
+<section class="card" id="admin">
+  <h2><span class="num">12</span> Users &amp; Roles</h2>
+
+  <h3>Users</h3>
+  <p>Manage application users and assign each one a role. Configure what a role can access on the Roles page.</p>
+
+  <figure class="shot" data-file="24-users.png">
+    <img src="/user-manual/screenshots/24-users.png" alt="Users list" />
+    <figcaption><b>Figure 24</b> — Users list with role, status and last login.</figcaption>
+  </figure>
+
+  <ol class="steps">
+    <li>Select <span class="ui">Add User</span>.</li>
+    <li>Enter the <span class="ui">Full Name</span> and <span class="ui">Email</span> — the email is the
+      sign-in identity.</li>
+    <li>Set the <span class="ui">Password</span>. When editing an existing user the field reads
+      <span class="ui">New Password (leave blank to keep current)</span>.</li>
+    <li>Choose the <span class="ui">Role</span> — required; it determines what the user can see.</li>
+    <li>Set <span class="ui">Status</span> to Active or Inactive, then <span class="ui">Save</span>.</li>
+  </ol>
+
+  <div class="tip">
+    <b>Deactivate rather than delete</b>
+    <p>Setting a leaver to Inactive blocks sign-in immediately while preserving their name on the audit
+    entries and approvals they made.</p>
+  </div>
+
+  <h3>Roles</h3>
+  <p>Define roles and the menus / pages each role is permitted to access.</p>
+
+  <figure class="shot" data-file="25-roles.png">
+    <img src="/user-manual/screenshots/25-roles.png" alt="Roles list and permission matrix" />
+    <figcaption><b>Figure 25</b> — Roles, with a count of granted permissions per role.</figcaption>
+  </figure>
+
+  <ol class="steps">
+    <li>Select <span class="ui">Add Role</span>.</li>
+    <li>Enter the <span class="ui">Role Name</span> (required) and a <span class="ui">Description</span>.</li>
+    <li>Set <span class="ui">Status</span>.</li>
+    <li>Under <b>Menu &amp; Page Permissions</b>, tick the modules the role may open. They are grouped as
+      General, Master Data and Administration.</li>
+    <li>Select <span class="ui">Save</span>. Users holding the role pick up the change on their next page load.</li>
+  </ol>
+
+  <div class="note">
+    <b>Separation of duties</b>
+    <p>Grant <b>Billing &amp; Invoices</b> plus <b>Reports</b> to Finance for approval and payment, and keep
+    <b>Users</b>, <b>Roles</b> and <b>Integration Logs</b> with the Fleet Administrator only. Nobody outside
+    the fleet team needs master data write access.</p>
+  </div>
+</section>
+
+<!-- ============================== 13. MOBILE ============================== -->
+<section class="card" id="mobile">
+  <h2><span class="num">13</span> Mobile In-App View</h2>
+
+  <p>
+    A phone-sized interface for drivers and field staff, reached at <code>/in-app-view</code>. Drivers see
+    only the trips assigned to them; staff additionally get a read-only vehicle list.
+  </p>
+
+  <h3>Signing in</h3>
+  <ol class="steps">
+    <li>Open the in-app view on the phone.</li>
+    <li>Choose <span class="ui">Driver Login</span> or <span class="ui">Staff Login</span>.</li>
+    <li><b>Drivers:</b> enter your <span class="ui">Mobile Number</span> and password — your password is your
+      mobile number. <b>Staff:</b> enter your email and password.</li>
+    <li>Select <span class="ui">Sign In</span>.</li>
+  </ol>
+
+  <figure class="shot" data-file="26-mobile-login.png">
+    <img src="/user-manual/screenshots/26-mobile-login.png" alt="Mobile in-app view login" />
+    <figcaption><b>Figure 26</b> — Mobile sign-in with the Staff / Driver toggle.</figcaption>
+  </figure>
+
+  <div class="warnbox">
+    <b>Inactive driver</b>
+    <p>“This driver account is inactive. Contact your Fleet Administrator.” means the driver's status in the
+    Driver Master is not Active.</p>
+  </div>
+
+  <h3>Home</h3>
+  <p>
+    A greeting with your role, then tappable counters — <span class="ui">My Trips</span> (drivers) or
+    <span class="ui">Total Requisitions</span> (staff), <span class="ui">Trips In Progress</span>,
+    <span class="ui">Started Trips</span>, <span class="ui">Completed Trips</span> and
+    <span class="ui">Vehicles</span> for staff. Tapping a counter opens the trip list already filtered.
+    The bottom bar carries <span class="ui">Home</span>, <span class="ui">Trips</span>,
+    <span class="ui">Vehicles</span> (staff) and <span class="ui">Profile</span>.
+  </p>
+
+  <figure class="shot" data-file="27-mobile-home.png">
+    <img src="/user-manual/screenshots/27-mobile-home.png" alt="Mobile home with trip counters" />
+    <figcaption><b>Figure 27</b> — Mobile home. Each counter is a shortcut into the filtered trip list.</figcaption>
+  </figure>
+
+  <h3>Trips</h3>
+  <p>
+    Search on ticket, employee, route or vehicle, and filter with the chips
+    <span class="ui">All</span>, <span class="ui">In Progress</span>, <span class="ui">Started</span>,
+    <span class="ui">Completed</span>, <span class="ui">Cancelled</span>, <span class="ui">Rejected</span>.
+    Each card shows the ticket, status, employee and department, the pickup → destination route, the vehicle
+    and the request time. Tap a card for the details.
+  </p>
+
+  <figure class="shot" data-file="28-mobile-trips.png">
+    <img src="/user-manual/screenshots/28-mobile-trips.png" alt="Mobile trip list" />
+    <figcaption><b>Figure 28</b> — Mobile trip list with search and status chips.</figcaption>
+  </figure>
+
+  <h3>Trip details and trip actions</h3>
+  <p>
+    The detail screen shows the route on a map plus employee, department, vehicle, driver, vendor, the
+    approximate window, the actual start and end, and whether the trip is invoiced. The action buttons are:
+  </p>
+  <ul>
+    <li><span class="ui">Start Trip</span> — when a vehicle and driver are assigned and the trip has not started.</li>
+    <li><span class="ui">End Trip</span> — when the trip is running; this completes the trip and generates the bill.</li>
+    <li><span class="ui">View Invoice</span> — opens the trip invoice.</li>
+    <li><span class="ui">Download Invoice</span> — saves the trip invoice PDF.</li>
+  </ul>
+
+  <figure class="shot" data-file="29-mobile-trip-details.png">
+    <img src="/user-manual/screenshots/29-mobile-trip-details.png" alt="Mobile trip details with map and actions" />
+    <figcaption><b>Figure 29</b> — Mobile trip details: route map, trip data and the Start / End Trip actions.</figcaption>
+  </figure>
+
+  <h3>Profile</h3>
+  <p>Your name, sign-in identity, <span class="ui">Role</span> and <span class="ui">User ID</span>, with
+  <span class="ui">Sign Out</span>.</p>
+
+  <figure class="shot" data-file="30-mobile-profile.png">
+    <img src="/user-manual/screenshots/30-mobile-profile.png" alt="Mobile profile screen" />
+    <figcaption><b>Figure 30</b> — Mobile profile and sign-out.</figcaption>
+  </figure>
+
+  <div class="tip">
+    <b>Driver routine</b>
+    <p>Open the trip, tap <span class="ui">Start Trip</span> when you pick the employee up, and
+    <span class="ui">End Trip</span> as soon as you drop them off. Accurate start and end times are what
+    make the distance charge and overtime correct — and prevent the trip from being flagged.</p>
+  </div>
+</section>
+
+<!-- ============================== APPENDIX A ============================== -->
+<section class="card" id="appendix-a">
+  <h2><span class="num">A</span> Status Reference</h2>
+
+  <h3>Trip status</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Status</th><th>Meaning</th><th>Billable</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip info">In Progress</span></td><td>Requisition received; awaiting or holding an assignment, trip not yet started.</td><td>Not yet</td></tr>
+        <tr><td><span class="chip warn">Started</span></td><td>Trip is running; the actual start time is recorded.</td><td>Not yet</td></tr>
+        <tr><td><span class="chip ok">Completed</span></td><td>Trip ended; distance and travel time recorded.</td><td>Yes</td></tr>
+        <tr><td><span class="chip grey">Cancelled</span></td><td>Cancelled before starting.</td><td>No</td></tr>
+        <tr><td><span class="chip err">Rejected</span></td><td>Requisition rejected.</td><td>No</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Invoice status</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Status</th><th>Meaning</th><th>Next step</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip grey">Draft</span></td><td>Generated from completed trips, not yet submitted.</td><td>Verify the breakdown, then Submit for Approval.</td></tr>
+        <tr><td><span class="chip warn">Pending Approval</span></td><td>Awaiting review.</td><td>Approve or Reject.</td></tr>
+        <tr><td><span class="chip ok">Approved</span></td><td>Approved for payment.</td><td>Mark as Paid once settled.</td></tr>
+        <tr><td><span class="chip ok">Paid</span></td><td>Settled with the vendor.</td><td>None — closed.</td></tr>
+        <tr><td><span class="chip err">Rejected</span></td><td>Returned with a reason.</td><td>Correct the data or adjust, then resubmit.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Master data status</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Record</th><th>Values</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>Vehicle</td><td><span class="chip ok">Active</span> <span class="chip warn">Maintenance</span> <span class="chip grey">Inactive</span></td><td>Only Active vehicles can be assigned to a trip.</td></tr>
+        <tr><td>Driver</td><td><span class="chip ok">Active</span> <span class="chip err">Suspended</span> <span class="chip grey">Inactive</span></td><td>Only Active drivers can be assigned or sign in to the mobile view.</td></tr>
+        <tr><td>User / Role</td><td><span class="chip ok">Active</span> <span class="chip grey">Inactive</span></td><td>Inactive users are refused at sign-in.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== APPENDIX B ============================== -->
+<section class="card" id="appendix-b">
+  <h2><span class="num">B</span> Exception Flags</h2>
+
+  <p>
+    The system flags trip data that looks incomplete or inconsistent so it can be corrected before billing.
+    Flagged requisitions are counted on the dashboard and on the requisitions page, and can be isolated with
+    the <span class="ui">Flagged</span> status filter.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Flag</th><th>Raised when</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="chip err">Missing Start/End Time</span></td>
+          <td>The trip has no recorded actual start or end.</td>
+          <td>Confirm the times with the driver or log book and record them before billing.</td>
+        </tr>
+        <tr>
+          <td><span class="chip err">Missing Distance</span></td>
+          <td>No distance came through for a completed trip.</td>
+          <td>Check the GPS feed and the integration log; correct against the log book.</td>
+        </tr>
+        <tr>
+          <td><span class="chip err">Vehicle/Driver Mismatch</span></td>
+          <td>The vehicle or driver on the trip differs from the assignment.</td>
+          <td>Establish which actually ran the trip and reconcile before approving.</td>
+        </tr>
+        <tr>
+          <td><span class="chip err">Duplicate Ticket ID</span></td>
+          <td>The same OneGP ticket arrived more than once.</td>
+          <td>Keep one record and cancel the duplicate so the trip is not billed twice.</td>
+        </tr>
+        <tr>
+          <td><span class="chip err">GPS Data Missing</span></td>
+          <td>No GPS / trip telemetry for the trip.</td>
+          <td>Verify with the GPS provider; fall back to the log book distance and note the source.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip">
+    <b>Monthly close routine</b>
+    <p>Before generating monthly bills: filter requisitions to <span class="ui">Flagged</span> and clear every
+    item, then filter to <span class="ui">Uninvoiced</span> to confirm no completed trip has been missed.</p>
+  </div>
+</section>
+
+<!-- ============================== APPENDIX C ============================== -->
+<section class="card" id="appendix-c">
+  <h2><span class="num">C</span> Field Reference</h2>
+
+  <h3>Vehicle Master</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Vehicle Number</td><td>Text</td><td>Yes</td><td>Registration number; identifies the vehicle across trips and invoices.</td></tr>
+        <tr><td>Vehicle Category</td><td>List</td><td>Yes</td><td>From the Vehicle Category master.</td></tr>
+        <tr><td>Fuel Type</td><td>List</td><td>Yes</td><td>From the Fuel Type master; with the category it selects the rate card.</td></tr>
+        <tr><td>Seat Capacity</td><td>Number</td><td>Yes</td><td>Used when matching a vehicle to a requirement.</td></tr>
+        <tr><td>Partner / Vendor</td><td>Text</td><td>Yes</td><td>Drives the vendor-wise billing report.</td></tr>
+        <tr><td>Status</td><td>List</td><td>Yes</td><td>Active / Inactive / Maintenance.</td></tr>
+        <tr><td>Monthly Fixed Rent</td><td>Amount</td><td>—</td><td>Body rent billed each month.</td></tr>
+        <tr><td>Per KM Rate</td><td>Amount</td><td>—</td><td>Fallback when no rate card matches.</td></tr>
+        <tr><td>OT Rate / hr</td><td>Amount</td><td>—</td><td>Extra-hour service charge.</td></tr>
+        <tr><td>Personal Usage Bill</td><td>Amount</td><td>—</td><td>Personal usage recovered from the employee.</td></tr>
+        <tr><td>Toll / Parking / Startup Fuel / Mobile Bill / Other Charge</td><td>Amount</td><td>—</td><td>Recurring monthly charges added to the invoice.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Driver Master</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Driver Name</td><td>Text</td><td>Yes</td><td>Appears on assignments, trips and reports.</td></tr>
+        <tr><td>Mobile Number</td><td>Text</td><td>Yes</td><td>Also the driver's mobile in-app view identity.</td></tr>
+        <tr><td>Driving License Number</td><td>Text</td><td>Yes</td><td>Compliance record.</td></tr>
+        <tr><td>License Attachment</td><td>Text</td><td>—</td><td>Reference to the scanned document.</td></tr>
+        <tr><td>NID Number</td><td>Text</td><td>Yes</td><td>Compliance record.</td></tr>
+        <tr><td>NID Attachment</td><td>Text</td><td>—</td><td>Reference to the scanned document.</td></tr>
+        <tr><td>Vendor</td><td>Text</td><td>—</td><td>Supplying vendor.</td></tr>
+        <tr><td>Status</td><td>List</td><td>Yes</td><td>Active / Inactive / Suspended.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Trip requisition</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Field</th><th>Source</th><th>Used for</th></tr></thead>
+      <tbody>
+        <tr><td>Ticket ID / Requestor ID</td><td>OneGP</td><td>Traceability and duplicate detection.</td></tr>
+        <tr><td>Employee Name, Department / Cost Centre</td><td>OneGP</td><td>Department-wise utilisation; invoice bill-to.</td></tr>
+        <tr><td>Request Date &amp; Time</td><td>OneGP</td><td>Determines the billing month.</td></tr>
+        <tr><td>Pickup Location, Destination</td><td>OneGP / map</td><td>Route and distance.</td></tr>
+        <tr><td>Vehicle Number, Vehicle Category</td><td>Assignment</td><td>Rate selection and vehicle-wise billing.</td></tr>
+        <tr><td>Driver Information</td><td>Assignment</td><td>Driver utilisation; mismatch checks.</td></tr>
+        <tr><td>Trip Start / End Time</td><td>Trip execution</td><td>Travel time and overtime.</td></tr>
+        <tr><td>Total Travel Time</td><td>Calculated</td><td>Overtime determination.</td></tr>
+        <tr><td>Total Distance (KM)</td><td>GPS / route</td><td>Distance charge.</td></tr>
+        <tr><td>Trip Status</td><td>System</td><td>Whether the trip is billable.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== APPENDIX D ============================== -->
+<section class="card" id="appendix-d">
+  <h2><span class="num">D</span> Troubleshooting</h2>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Symptom</th><th>Likely cause</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A menu item is missing.</td>
+          <td>Your role does not hold that permission.</td>
+          <td>Ask a Fleet Administrator to grant the module on the Roles page.</td>
+        </tr>
+        <tr>
+          <td>Opening a page bounces you to the Dashboard.</td>
+          <td>Same as above, entered by URL.</td>
+          <td>Request the permission rather than the link.</td>
+        </tr>
+        <tr>
+          <td>A vehicle or driver is not in the assignment dropdown.</td>
+          <td>Its status is not Active.</td>
+          <td>Set the record to Active in the master, or pick another.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">Assign Vehicle</span> is greyed out.</td>
+          <td>The trip has already started or is closed.</td>
+          <td>Assignment is locked after start; correct via an adjustment if billing is affected.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">End Trip</span> is greyed out.</td>
+          <td>The trip was never started, or has already ended.</td>
+          <td>Start the trip first, or check whether it is already Completed.</td>
+        </tr>
+        <tr>
+          <td>A report is empty.</td>
+          <td>No <span class="ui">Search</span> yet, or no data for that month / selection.</td>
+          <td>Select the entities, month and year, then Search. Widen the selection.</td>
+        </tr>
+        <tr>
+          <td><span class="ui">Export Excel</span> warns you.</td>
+          <td>Nothing has been loaded yet.</td>
+          <td>Run the search first, then export.</td>
+        </tr>
+        <tr>
+          <td>A completed trip has no invoice.</td>
+          <td>No vehicle assigned, or the trip is flagged / cancelled.</td>
+          <td>Filter to <span class="ui">Uninvoiced</span>, fix the assignment or flag, and re-run generation.</td>
+        </tr>
+        <tr>
+          <td>An invoice total looks wrong.</td>
+          <td>Rate card, vehicle rates or distance is wrong.</td>
+          <td>Check the charge breakdown line by line, correct the master data, or apply a manual adjustment with a reason.</td>
+        </tr>
+        <tr>
+          <td>A rate card cannot be saved.</td>
+          <td>That Category + Fuel Type pair already exists.</td>
+          <td>Edit the existing card.</td>
+        </tr>
+        <tr>
+          <td>A requisition from OneGP is missing.</td>
+          <td>The inbound API transaction failed.</td>
+          <td>Check Administration → Integration Logs for a failed entry with that reference ID.</td>
+        </tr>
+        <tr>
+          <td>A driver cannot sign in to the mobile view.</td>
+          <td>Wrong mobile number format, or driver not Active.</td>
+          <td>Verify the number in the Driver Master and set the status to Active.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== APPENDIX E ============================== -->
+<section class="card" id="appendix-e">
+  <h2><span class="num">E</span> Glossary</h2>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><b>OneGP</b></td><td>The source system where employees raise vehicle requisitions and vehicles are assigned.</td></tr>
+        <tr><td><b>Requisition / Ticket ID</b></td><td>The unique identifier of a vehicle request, used to trace a trip between the two systems.</td></tr>
+        <tr><td><b>Body rent</b></td><td>The monthly fixed rent payable for a vehicle regardless of distance travelled.</td></tr>
+        <tr><td><b>Distance charge</b></td><td>Distance travelled multiplied by the per-KM rate for the vehicle's category and fuel type.</td></tr>
+        <tr><td><b>OT / Extra hour service charge</b></td><td>The charge applied when trip duration exceeds the configured working hours.</td></tr>
+        <tr><td><b>Startup fuel</b></td><td>The fuel provided at the start of a billing period or trip, billed as a separate line.</td></tr>
+        <tr><td><b>Driver DA</b></td><td>Driver daily allowance, billed as days × rate in the detailed billing sheet.</td></tr>
+        <tr><td><b>Rate card</b></td><td>The configured rent, per-KM and OT rates for one Vehicle Category × Fuel Type combination.</td></tr>
+        <tr><td><b>Billing month</b></td><td>The <code>YYYY-MM</code> period a trip and its invoice belong to.</td></tr>
+        <tr><td><b>Consolidation</b></td><td>Rolling every trip of a vehicle within a billing month into one invoice.</td></tr>
+        <tr><td><b>Manual adjustment</b></td><td>An authorised correction to an invoice total, always with a mandatory reason in the audit log.</td></tr>
+        <tr><td><b>Flag</b></td><td>A marker that trip data is incomplete or inconsistent and needs review before billing.</td></tr>
+        <tr><td><b>RBAC</b></td><td>Role-Based Access Control — permissions granted to roles, and roles assigned to users.</td></tr>
+        <tr><td><b>In-app view</b></td><td>The mobile interface used by drivers and field staff.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== APPENDIX F ============================== -->
+<section class="card" id="appendix-f">
+  <h2><span class="num">F</span> Replacing the Screenshots</h2>
+
+  <p>
+    Every screenshot on this page is a plain image file. To change one, replace the file — nothing else needs
+    editing and no rebuild is required.
+  </p>
+
+  <h3>Where the files live</h3>
+  <div class="kv">
+    <dt>Screenshot folder</dt><dd><code>public/user-manual/screenshots/</code></dd>
+    <dt>This page</dt><dd><code>public/user-manual/index.html</code></dd>
+    <dt>Public URL</dt><dd><code>/user-manual</code></dd>
+  </div>
+
+  <h3>How to replace a screenshot</h3>
+  <ol class="steps">
+    <li>Find the figure you want to change and note the file name in its caption area (each pending slot shows
+      its file name; the list below has them all).</li>
+    <li>Take the screenshot and save it as a <code>.png</code>.</li>
+    <li>Copy it into <code>public/user-manual/screenshots/</code> using <b>exactly</b> the same file name,
+      overwriting the old file.</li>
+    <li>Reload <code>/user-manual</code> and hard-refresh (<code>Ctrl</code>+<code>F5</code>) if the browser
+      serves a cached image.</li>
+  </ol>
+
+  <div class="tip">
+    <b>For consistent results</b>
+    <p>Capture at a browser width of 1440–1600&nbsp;px, keep the zoom at 100%, and use PNG. Mobile figures
+    (26–30) look best captured at a phone width of about 390&nbsp;px. Keep each file under ~500&nbsp;KB so the
+    page stays fast, and mask any real employee names, mobile numbers or NID data before publishing —
+    this page is public.</p>
+  </div>
+
+  <h3>Screenshot index</h3>
+  <p>Any slot without a file simply shows a labelled placeholder, so the page never breaks.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Fig.</th><th>File name</th><th>What to capture</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td><code>01-login.png</code></td><td>Sign-in screen</td></tr>
+        <tr><td class="num">2</td><td><code>02-dashboard.png</code></td><td>Dashboard with KPI tiles and charts</td></tr>
+        <tr><td class="num">3</td><td><code>03-vehicle-master.png</code></td><td>Vehicle Master list</td></tr>
+        <tr><td class="num">4</td><td><code>04-vehicle-add-dialog.png</code></td><td>Add Vehicle dialog</td></tr>
+        <tr><td class="num">5</td><td><code>05-driver-master.png</code></td><td>Driver Master list</td></tr>
+        <tr><td class="num">6</td><td><code>06-driver-add-dialog.png</code></td><td>Add Driver dialog</td></tr>
+        <tr><td class="num">7</td><td><code>07-vehicle-categories.png</code></td><td>Vehicle Categories list</td></tr>
+        <tr><td class="num">8</td><td><code>08-fuel-types.png</code></td><td>Fuel Types list</td></tr>
+        <tr><td class="num">9</td><td><code>09-rate-card.png</code></td><td>Rate Card Configuration</td></tr>
+        <tr><td class="num">10</td><td><code>10-requisitions-list.png</code></td><td>Trip Requisitions list</td></tr>
+        <tr><td class="num">11</td><td><code>11-requisition-new.png</code></td><td>New Requisition form with map</td></tr>
+        <tr><td class="num">12</td><td><code>12-requisition-assign.png</code></td><td>Assign Vehicle &amp; Driver dialog</td></tr>
+        <tr><td class="num">13</td><td><code>13-requisition-extend-time.png</code></td><td>Extend Trip Time dialog</td></tr>
+        <tr><td class="num">14</td><td><code>14-requisition-details.png</code></td><td>Requisition Details with route</td></tr>
+        <tr><td class="num">15</td><td><code>15-trip-invoice.png</code></td><td>Trip Invoice preview</td></tr>
+        <tr><td class="num">16</td><td><code>16-billing-list.png</code></td><td>Billing &amp; Invoices list</td></tr>
+        <tr><td class="num">17</td><td><code>17-invoice-detail.png</code></td><td>Invoice detail / charge breakdown</td></tr>
+        <tr><td class="num">18</td><td><code>18-invoice-adjustment.png</code></td><td>Manual Billing Adjustment dialog</td></tr>
+        <tr><td class="num">19</td><td><code>19-reports-hub.png</code></td><td>Reports hub</td></tr>
+        <tr><td class="num">20</td><td><code>20-report-vehicle-billing.png</code></td><td>Vehicle Billing Report with filters</td></tr>
+        <tr><td class="num">21</td><td><code>21-report-excel-export.png</code></td><td>Exported Excel sheet</td></tr>
+        <tr><td class="num">22</td><td><code>22-audit-log.png</code></td><td>Audit Log</td></tr>
+        <tr><td class="num">23</td><td><code>23-integration-logs.png</code></td><td>Integration Logs</td></tr>
+        <tr><td class="num">24</td><td><code>24-users.png</code></td><td>Users list</td></tr>
+        <tr><td class="num">25</td><td><code>25-roles.png</code></td><td>Roles and permission matrix</td></tr>
+        <tr><td class="num">26</td><td><code>26-mobile-login.png</code></td><td>Mobile sign-in</td></tr>
+        <tr><td class="num">27</td><td><code>27-mobile-home.png</code></td><td>Mobile home counters</td></tr>
+        <tr><td class="num">28</td><td><code>28-mobile-trips.png</code></td><td>Mobile trip list</td></tr>
+        <tr><td class="num">29</td><td><code>29-mobile-trip-details.png</code></td><td>Mobile trip details</td></tr>
+        <tr><td class="num">30</td><td><code>30-mobile-profile.png</code></td><td>Mobile profile</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Adding, removing or reordering figures</h3>
+  <p>
+    Copy an existing block in <code>index.html</code> and change the three places the file name appears —
+    <code>data-file</code>, the image <code>src</code> and the caption:
+  </p>
+  <div class="formula">
+&lt;figure class="shot" data-file="<em>31-my-screen.png</em>"&gt;<br />
+&nbsp;&nbsp;&lt;img src="/user-manual/screenshots/<em>31-my-screen.png</em>" alt="<em>Short description</em>" /&gt;<br />
+&nbsp;&nbsp;&lt;figcaption&gt;&lt;b&gt;Figure <em>31</em>&lt;/b&gt; — <em>Caption text.</em>&lt;/figcaption&gt;<br />
+&lt;/figure&gt;
+  </div>
+  <p class="sub">
+    To edit any wording on this page, open <code>public/user-manual/index.html</code> in a text editor and
+    change the text. To add a section to the contents list, add one
+    <code>&lt;li&gt;&lt;a href="#your-id"&gt;…&lt;/a&gt;&lt;/li&gt;</code> to the list at the top and give
+    your <code>&lt;section&gt;</code> the matching <code>id</code>.
+  </p>
+</section>
+
+</main>
+</div>
+
+<footer class="docfoot">
+  <span>Fleet Management — Automated Fleet Billing System integrated with OneGP.</span>
+  <span>Feature List &amp; User Manual · document version 1.0</span>
+</footer>
+
+<a href="#" class="toplink" id="toplink" aria-label="Back to top">&#8593;</a>
+
+<script>
+  // 1) Screenshot placeholders — a figure whose image file is not present (or
+  //    fails to load) shows a labelled dashed placeholder instead of a broken
+  //    image, so the page reads correctly before the screenshots are added.
+  document.querySelectorAll("figure.shot").forEach(function (fig) {
+    var img = fig.querySelector("img");
+    if (!img) return;
+    var file = fig.getAttribute("data-file") || "screenshot.png";
+
+    var ph = document.createElement("div");
+    ph.className = "ph";
+    ph.innerHTML =
+      '<div class="ico">&#128247;</div>' +
+      '<div>Screenshot pending</div>' +
+      '<div class="fname">screenshots/' + file + "</div>" +
+      '<div class="hint">Drop this file into public/user-manual/screenshots/ to replace this placeholder.</div>';
+    img.insertAdjacentElement("afterend", ph);
+
+    var markMissing = function () { fig.classList.add("missing"); };
+    img.addEventListener("error", markMissing);
+    // Catch images that already failed before this script ran.
+    if (img.complete && img.naturalWidth === 0) markMissing();
+  });
+
+  // 2) Highlight the contents entry for the section currently in view.
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav.toc a"));
+  var targets = links
+    .map(function (a) { return document.querySelector(a.getAttribute("href")); })
+    .filter(Boolean);
+
+  if ("IntersectionObserver" in window && targets.length) {
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          links.forEach(function (a) { a.classList.remove("active"); });
+          var active = links.filter(function (a) {
+            return a.getAttribute("href") === "#" + entry.target.id;
+          })[0];
+          if (active) active.classList.add("active");
+        });
+      },
+      { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
+    );
+    targets.forEach(function (t) { observer.observe(t); });
+  }
+
+  // 3) Back-to-top button.
+  var toplink = document.getElementById("toplink");
+  var onScroll = function () {
+    toplink.classList.toggle("show", window.scrollY > 700);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+</script>
+
+</body>
+</html>

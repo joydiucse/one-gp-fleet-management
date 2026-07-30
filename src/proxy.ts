@@ -29,8 +29,18 @@ function isAllowedForDriver(pathname: string, method: string): boolean {
   return false;
 }
 
+// Pages anyone may read without signing in.
+function isPublicPage(pathname: string): boolean {
+  return pathname === "/user-manual" || pathname.startsWith("/user-manual/");
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (isPublicPage(pathname)) {
+    return NextResponse.next();
+  }
+
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const payload = token ? await verifySession(token) : null;
   const origin = getOrigin(req);

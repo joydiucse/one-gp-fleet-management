@@ -1,5 +1,13 @@
 [
   {
+    "id": "AL-193",
+    "timestamp": "2026-07-30T08:31:53.732Z",
+    "user": "Md. Rezaul Karim",
+    "action": "User Login",
+    "module": "User Management",
+    "details": "Md. Rezaul Karim (Fleet Administrator) signed in."
+  },
+  {
     "id": "AL-192",
     "timestamp": "2026-07-29T06:43:53.175Z",
     "user": "Md. Rezaul Karim",
