@@ -12,15 +12,24 @@ A [Next.js](https://nextjs.org) app backed by MySQL via [Prisma](https://www.pri
 
 ## Getting started
 
-1. **Configure the connection.** Copy `.env.example` to `.env` and set `DATABASE_URL`:
+1. **Configure the connection.** Copy `.env.example` to `.env` and fill in both
+   database URLs. `APP_ENV` picks which one the app, the Prisma CLI and the seed
+   script use, so switching environments never means editing a URL:
 
    ```
-   DATABASE_URL="mysql://root@127.0.0.1:3306/onegp_fleet"
+   APP_ENV="dev"
+   DATABASE_URL_DEV="mysql://root@127.0.0.1:3306/onegp_fleet"
+   DATABASE_URL_PROD="mysql://user:password@host:3306/onegp_fleet"
    SESSION_SECRET="a-long-random-value"
    ```
 
    Laragon/XAMPP defaults to a passwordless `root`. Use
-   `mysql://user:password@host:3306/database` otherwise.
+   `mysql://user:password@host:3306/database` otherwise, percent-encoding
+   reserved characters in the password (`#` is `%23`, `@` is `%40`).
+
+   `APP_ENV` defaults to `dev` when unset, so a missing value can never mean
+   production. `npm run db:seed` clears the tables it fills, so it refuses to run
+   with `APP_ENV=prod` unless `SEED_ALLOW_PROD=1` is set as well.
 
 2. **Create the database:**
 

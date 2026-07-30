@@ -19,13 +19,21 @@ import path from "node:path";
 import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import "dotenv/config";
+import { appEnv, databaseUrl } from "../src/server/databaseUrl";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const POLYLINE_DIR = path.join(DATA_DIR, "trip-route-polylines");
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set.");
-const prisma = new PrismaClient({ adapter: new PrismaMariaDb(url) });
+// The import below clears the tables it fills, so refuse to run against the
+// production database unless that is spelled out on the command line.
+if (appEnv() === "prod" && !process.env.SEED_ALLOW_PROD) {
+  throw new Error(
+    "Refusing to seed with APP_ENV=prod: this clears the tables it fills. " +
+      "Set SEED_ALLOW_PROD=1 as well if that is really what you want."
+  );
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaMariaDb(databaseUrl()) });
 
 // ------------------------------------------------------------------ helpers
 
